@@ -4,56 +4,182 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+enum InterviewStatus {
+  PENDING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum InterviewMode {
+  VOICE
+  TEXT
+  HYBRID
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
 }
 
 model User {
-  id         String      @id @default(uuid()) @db.Uuid
-  clerkId    String?     @unique
-  email      String      @unique
-  name       String
-  role       String      @default("candidate")
-  interviews Interview[]
-  reports    Report[]
-  memories   MemoryNode[]
-  createdAt  DateTime    @default(now())
+  id              String              @id @default(cuid())
+  clerkId         String              @unique
+  email           String              @unique
+  fullName        String?
+  profile         UserProfile?
+  resumes         Resume[]
+  jobDescriptions JobDescription[]
+  interviews      Interview[]
+  analytics       InterviewAnalytics?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+model UserProfile {
+  id                     String        @id @default(cuid())
+  userId                 String        @unique
+  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentRole            String?
+  experience             String?
+  githubUrl              String?
+  linkedinUrl            String?
+  targetRole             String?
+  preferredInterviewMode InterviewMode @default(VOICE)
+  preferredDifficulty    Difficulty    @default(MEDIUM)
+  targetCompanies        String[]
+  interviewTypes         String[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([targetRole])
+}
+
+model Resume {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl           String
+  parsedText        String?
+  extractedSkills   String[]
+  extractedProjects Json?
+  uploadedAt        DateTime    @default(now())
+  interviews        Interview[]
+
+  @@index([userId])
+  @@index([uploadedAt])
+}
+
+model JobDescription {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      String
+  title        String
+  fileUrl      String?
+  rawText      String?
+  parsedSkills String[]
+  uploadedAt   DateTime    @default(now())
+  interviews   Interview[]
+
+  @@index([userId])
+  @@index([company])
+  @@index([title])
+  @@index([uploadedAt])
 }
 
 model Interview {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      String
-  status    String   @default("pending")
-  questions Json     @default("[]")
-  answers   Json     @default("[]")
-  reports   Report[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId         String?
+  resume           Resume?         @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobDescriptionId String?
+  jobDescription   JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
+  company          String?
+  role             String
+  status           InterviewStatus @default(PENDING)
+  startedAt        DateTime?
+  endedAt          DateTime?
+  questions        Question[]
+  report           Report?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([userId])
+  @@index([resumeId])
+  @@index([jobDescriptionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  interviewId String
+  interview   Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  sequence    Int
+  question    String
+  category    String
+  difficulty  Difficulty
+  answers     Answer[]
+  createdAt   DateTime   @default(now())
+
+  @@unique([interviewId, sequence])
+  @@index([interviewId])
+  @@index([category])
+  @@index([difficulty])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  transcript String
+  duration   Int
+  score      Float?
+  confidence Float?
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  @@index([questionId])
+  @@index([score])
 }
 
 model Report {
-  id          String    @id @default(uuid()) @db.Uuid
-  interviewId String    @db.Uuid
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  userId      String    @db.Uuid
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  evaluation  Json
-  createdAt   DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  interviewId         String    @unique
+  interview           Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  overallScore        Float
+  technicalScore      Float
+  communicationScore  Float
+  confidenceScore     Float
+  behavioralScore     Float
+  problemSolvingScore Float
+  strengths           String[]
+  weaknesses          String[]
+  missingTopics       String[]
+  recommendations     String[]
+  createdAt           DateTime  @default(now())
 
-  @@index([userId])
+  @@index([overallScore])
+  @@index([createdAt])
 }
 
-model MemoryNode {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  kind      String   @default("note")
-  source    String?
-  createdAt DateTime @default(now())
+model InterviewAnalytics {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalInterviews Int      @default(0)
+  averageScore    Float    @default(0)
+  currentStreak   Int      @default(0)
+  readinessScore  Float    @default(0)
+  updatedAt       DateTime @updatedAt
 
-  @@index([userId])
+  @@index([readinessScore])
 }

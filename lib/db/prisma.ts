@@ -1,7 +1,20 @@
-/**
- * Prisma adapter boundary. Install `prisma` and `@prisma/client`, then replace
- * this guard with a generated PrismaClient singleton when Prisma is enabled.
- */
-export function getPrisma(): never {
-  throw new Error("Prisma client is not installed; use the Neon adapter for now");
+import { PrismaClient } from "@prisma/client";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
+
+export type { Prisma } from "@prisma/client";
