@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { requireUserId, AuthError } from "@/services/auth.service";
-import { saveResumeMetadata } from "@/services/resume.service";
-import { resumeUploadSchema } from "@/lib/validations/resume";
+import { saveJobDescription } from "@/services/jobDescription.service";
+import { jobDescriptionUploadSchema } from "@/lib/validations/job-description";
 import { success, failure, unauthorized, handleZodError } from "@/lib/utils/api";
 
 export async function POST(request: NextRequest) {
@@ -10,22 +10,22 @@ export async function POST(request: NextRequest) {
     const clerkId = await requireUserId();
 
     const body = await request.json();
-    const parsed = resumeUploadSchema.safeParse(body);
+    const parsed = jobDescriptionUploadSchema.safeParse(body);
 
     if (!parsed.success) {
       return handleZodError(parsed.error);
     }
 
-    const resume = await saveResumeMetadata(clerkId, parsed.data.fileUrl);
+    const jobDescription = await saveJobDescription(clerkId, parsed.data);
 
-    // TODO: Resume parsing with Gemini
+    // TODO: JD parsing with Gemini
 
-    return success({ resume });
+    return success({ jobDescription });
   } catch (reason) {
     if (reason instanceof AuthError) {
       return unauthorized();
     }
-    const message = reason instanceof Error ? reason.message : "Resume upload failed";
+    const message = reason instanceof Error ? reason.message : "Job description upload failed";
     return failure(message, 500);
   }
 }
