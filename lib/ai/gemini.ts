@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { DEFAULT_MODELS } from "@/constants";
+import { DEFAULT_MODELS } from "@/lib/utils/constants";
 
 let client: GoogleGenerativeAI | null = null;
 

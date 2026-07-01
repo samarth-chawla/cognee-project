@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/Sidebar";
-import { API } from "@/constants";
+import Sidebar from "@/components/common/Sidebar";
+import { API } from "@/lib/utils/constants";
 import type { MemoryNode } from "@/types";
 import { useSettingsStore } from "@/store/useSettingsStore";
 

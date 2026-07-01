@@ -7,7 +7,7 @@ import { WaveformShader } from "@/components/ui/WaveformShader";
 import { useInterview } from "@/hooks/useInterview";
 import { useInterviewStore } from "@/store/useInterviewStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { ROUTES } from "@/constants";
+import { ROUTES } from "@/lib/utils/constants";
 import { nowISO } from "@/lib/utils";
 
 export default function InterviewPage() {

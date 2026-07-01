@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Sidebar from "@/components/Sidebar";
-import { ROUTES } from "@/constants";
+import Sidebar from "@/components/common/Sidebar";
+import { ROUTES } from "@/lib/utils/constants";
 import { useSettingsStore } from "@/store/useSettingsStore";
 
 export default function FlowPage() {

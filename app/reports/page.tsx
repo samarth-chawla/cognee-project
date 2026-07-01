@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import { API, ROUTES } from "@/constants";
+import Sidebar from "@/components/common/Sidebar";
+import { API, ROUTES } from "@/lib/utils/constants";
 import type { Report } from "@/types";
 import { useSettingsStore } from "@/store/useSettingsStore";
 

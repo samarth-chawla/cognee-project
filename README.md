@@ -1,95 +1,52 @@
 # Interview Memory Agent
 
-AI-powered mock interviews with **long-term memory**. The agent generates
-role-specific questions, scores your answers, writes a report, and stores your
-strengths/weaknesses in a [Cognee](https://www.cognee.ai/) knowledge graph so
-future interviews target your weak spots.
-
-## Tech Stack
-
-| Layer      | Choice                                             |
-| ---------- | -------------------------------------------------- |
-| Framework  | Next.js 15+ (App Router, Route Handlers)           |
-| Language   | TypeScript                                         |
-| Styling    | Tailwind CSS + Shadcn UI                           |
-| State      | Zustand                                            |
-| Database   | PostgreSQL (`pg`)                                  |
-| Memory     | Cognee (HTTP sidecar, with in-memory demo fallback)|
-| AI         | OpenAI / Gemini (provider-agnostic)               |
-
-No monorepo, no Turborepo, no Express — plain Next.js Route Handlers.
+Next.js 16 interview-preparation app with AI question generation, evaluation, speech, reports, analytics, and Cognee-backed long-term memory.
 
 ## Architecture
 
-```
-app/                     Frontend pages (App Router)
-├── login/               Auth screen
-├── onboarding/          Pick target role
-├── dashboard/           Overview + stats
-├── interview/           Run a live interview
-├── reports/             Past evaluations
-├── memory/              Browse/search the memory graph
-├── settings/            Provider + preferences
-│
-└── api/                 Backend (Route Handlers)
-    ├── auth/            POST login/register
-    ├── interview/       POST create interview (AI question gen)
-    ├── evaluation/      POST score interview + save report + remember
-    ├── speech/          POST audio -> transcript (Whisper)
-    ├── memory/          GET list/search, POST add memory node
-    └── reports/         GET list reports
+- `app/api/auth` and `app/api/user`: identity, onboarding, profile, resume boundaries
+- `app/api/interview`: start, answer, progression, end, history, and lookup routes
+- `app/api/reports`: report generation and lookup
+- `app/api/memory`: timeline, insights, and graph routes
+- `app/api/speech`: token, transcription, and synthesis routes
+- `components`: feature and shared UI
+- `hooks`: client orchestration
+- `lib`: provider adapters, domain logic, validation, and shared utilities
+- `services`: application-level interview, memory, report, speech, and analytics logic
+- `store`: Zustand state
+- `types`: domain-specific TypeScript contracts
+- `prisma`: PostgreSQL schema and migrations
 
-components/              UI (Shadcn-style) + feature components
-├── dashboard/  interview/  reports/  ui/
+Next.js 16 renamed `middleware.ts` to `proxy.ts`, so this project intentionally keeps the supported root `proxy.ts` convention.
 
-lib/                     Server/shared utilities
-├── ai/                  OpenAI + Gemini + provider-agnostic complete()
-├── cognee/              Cognee client (add/cognify/search/list)
-├── db/                  PG pool + query() + schema.sql
-├── prompts/             LLM prompt builders
-└── utils/               cn(), uid(), API envelope helpers
+## API compatibility
 
-hooks/                   Client React hooks (useAuth, useInterview, useSpeech)
-store/                   Zustand stores (auth, interview, settings)
-services/                Business logic bridging routes <-> lib
-types/                   Shared TypeScript types
-constants/               Routes, API paths, model names
-public/                  Static assets
-```
+Existing working behavior moved to focused endpoints:
 
-### Request flow (an interview)
+- `POST /api/auth/me`
+- `POST /api/interview/start`
+- `POST /api/interview/end`
+- `POST /api/reports/generate`
+- `GET|POST /api/memory/timeline`
+- `POST /api/speech/transcribe`
+- `GET /api/interview/history`
 
-1. `interview/page.tsx` → `useInterview.start()` → `POST /api/interview`
-2. Route calls `services/interviewService.generateQuestions()`, which pulls
-   context via `lib/cognee.searchMemory()` and generates questions via `lib/ai`.
-3. User answers → `POST /api/evaluation` → `evaluateInterview()` scores it,
-   then `saveReport()` (Postgres) + `rememberEvaluation()` (Cognee) run.
-4. Insights persist in the memory graph and personalize the next session.
+Routes needing persistence or provider setup return `501` instead of reporting false success.
 
-## Getting Started
+## Setup
 
 ```bash
 npm install
-cp .env.example .env.local      # fill in keys
-psql "$DATABASE_URL" -f lib/db/schema.sql   # optional: create tables
+copy .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000.
+Configure Clerk plus required providers in `.env.local`. Cognee falls back to an in-process store when `COGNEE_API_URL` is absent. Report queries return empty data when PostgreSQL is unavailable.
 
-### Demo mode
+## Validation
 
-Without `COGNEE_API_URL` the memory layer uses an in-process stub, and without
-`DATABASE_URL` report persistence is skipped — the app still runs end-to-end for
-demos/hackathons.
-
-## Absolute imports
-
-`@/*` maps to the project root (see `tsconfig.json`), so import as
-`@/lib/ai`, `@/components/ui/button`, `@/store/useInterviewStore`, etc.
-
-## Cognee sidecar (optional)
-
-Cognee is Python-based. Run it as a small HTTP service exposing:
-`POST /add`, `POST /cognify`, `POST /search`, `GET /list?userId=`.
-Point `COGNEE_API_URL` at it. See `lib/cognee/client.ts` for the contract.
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```

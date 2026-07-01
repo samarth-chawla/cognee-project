@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useInterviewStore } from "@/store/useInterviewStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { API } from "@/constants";
+import { API } from "@/lib/utils/constants";
 import type { Answer, Evaluation, Interview } from "@/types";
 
 /** Client-side orchestration for running an interview. */

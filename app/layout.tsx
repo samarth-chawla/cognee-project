@@ -8,7 +8,7 @@ import {
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { APP_NAME } from "@/constants";
+import { APP_NAME } from "@/lib/utils/constants";
 import "@fontsource-variable/material-symbols-outlined";
 import "./globals.css";
 

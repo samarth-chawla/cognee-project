@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { ROUTES } from "@/constants";
+import { ROUTES } from "@/lib/utils/constants";
 
 export default function OnboardingPage() {
   const router = useRouter();

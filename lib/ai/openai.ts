@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { DEFAULT_MODELS } from "@/constants";
+import { DEFAULT_MODELS } from "@/lib/utils/constants";
 
 let client: OpenAI | null = null;
 

@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(uuid()) @db.Uuid
+  clerkId    String?     @unique
+  email      String      @unique
+  name       String
+  role       String      @default("candidate")
+  interviews Interview[]
+  reports    Report[]
+  memories   MemoryNode[]
+  createdAt  DateTime    @default(now())
+}
+
+model Interview {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String
+  status    String   @default("pending")
+  questions Json     @default("[]")
+  answers   Json     @default("[]")
+  reports   Report[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Report {
+  id          String    @id @default(uuid()) @db.Uuid
+  interviewId String    @db.Uuid
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluation  Json
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model MemoryNode {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  kind      String   @default("note")
+  source    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

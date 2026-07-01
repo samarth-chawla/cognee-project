@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 /**
  * Minimal Web Speech API wrapper for browser-side speech-to-text.
- * Server-side transcription lives at /api/speech.
+ * Server-side transcription lives at /api/speech/transcribe.
  */
 export function useSpeech() {
   const [transcript, setTranscript] = useState("");

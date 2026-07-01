@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { API } from "@/constants";
+import { API } from "@/lib/utils/constants";
 import type { AuthSession } from "@/types";
 
-/** Client-side auth helper backed by /api/auth. */
+/** Client-side auth helper backed by /api/auth/me. */
 export function useAuth() {
   const { user, token, setSession, clear } = useAuthStore();
   const [loading, setLoading] = useState(false);

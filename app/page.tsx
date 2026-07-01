@@ -1,6 +1,6 @@
 import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { ROUTES } from "@/constants";
+import { ROUTES } from "@/lib/utils/constants";
 
 export default function Home() {
   return (
