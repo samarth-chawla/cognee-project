@@ -8,6 +8,7 @@ import {
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { UserSync } from "@/components/auth/UserSync";
 import { APP_NAME } from "@/lib/utils/constants";
 import "@fontsource-variable/material-symbols-outlined";
 import "./globals.css";
@@ -81,6 +82,7 @@ export default function RootLayout({
               </Show>
             </nav>
           </header>
+          <UserSync />
           {children}
         </ClerkProvider>
       </body>

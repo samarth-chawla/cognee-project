@@ -18,6 +18,7 @@
     "@clerk/nextjs": "^7.5.12",
     "@fontsource-variable/material-symbols-outlined": "^5.2.45",
     "@google/generative-ai": "^0.21.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
