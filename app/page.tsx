@@ -1,35 +1,10 @@
+import { Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { ROUTES } from "@/constants";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-sans">
-      {/* Navbar */}
-      <header className="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 shadow-sm">
-        <nav className="flex justify-between items-center w-full px-8 py-4 max-w-container-max mx-auto">
-          <Link href={ROUTES.home} className="text-body-lg font-bold text-on-surface tracking-tight hover:text-primary transition-colors">
-            Interview Memory Agent
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <a className="text-on-surface-variant font-medium text-sm hover:text-primary transition-colors duration-200" href="#features">Features</a>
-            <a className="text-on-surface-variant font-medium text-sm hover:text-primary transition-colors duration-200" href="#how-it-works">How It Works</a>
-            <a className="text-on-surface-variant font-medium text-sm hover:text-primary transition-colors duration-200" href="#memory">Memory</a>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href={ROUTES.login}>
-              <button className="px-5 py-2 text-sm font-semibold text-on-surface-variant hover:text-primary transition-all active:scale-95 cursor-pointer">
-                Login
-              </button>
-            </Link>
-            <Link href={ROUTES.onboarding}>
-              <button className="bg-primary-container text-white px-6 py-2.5 rounded-[14px] text-sm font-semibold shadow-md hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer">
-                Get Started
-              </button>
-            </Link>
-          </div>
-        </nav>
-      </header>
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative pt-20 pb-32 overflow-hidden grid-bg">
@@ -45,11 +20,20 @@ export default function Home() {
               Practice interviews with an AI that remembers your mistakes, tracks your growth, and prepares you for your dream company.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-20">
-              <Link href={ROUTES.onboarding}>
-                <button className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-[14px] font-semibold text-base shadow-lg shadow-primary/20 hover:bg-[#4338CA] transition-all active:scale-98 cursor-pointer">
-                  Start Free
-                </button>
-              </Link>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-[14px] font-semibold text-base shadow-lg shadow-primary/20 hover:bg-[#4338CA] transition-all active:scale-98 cursor-pointer">
+                    Start Free
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link href={ROUTES.onboarding}>
+                  <button className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-[14px] font-semibold text-base shadow-lg shadow-primary/20 hover:bg-[#4338CA] transition-all active:scale-98 cursor-pointer">
+                    Continue Setup
+                  </button>
+                </Link>
+              </Show>
               <Link href={ROUTES.dashboard}>
                 <button className="w-full sm:w-auto bg-white border border-outline-variant text-on-surface px-8 py-4 rounded-[14px] font-semibold text-base hover:bg-surface-container transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer">
                   <span className="material-symbols-outlined">dashboard</span> Open Dashboard
@@ -398,11 +382,25 @@ export default function Home() {
               Stop practicing blindly. Start building memory with the most advanced AI preparation tool.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href={ROUTES.onboarding}>
-                <button className="w-full sm:w-auto bg-primary text-white px-10 py-4 rounded-[14px] font-bold text-sm hover:bg-[#4338CA] transition-all shadow-xl shadow-primary/20 cursor-pointer">
-                  Start Interview
-                </button>
-              </Link>
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <button className="w-full sm:w-auto bg-primary text-white px-10 py-4 rounded-[14px] font-bold text-sm hover:bg-[#4338CA] transition-all shadow-xl shadow-primary/20 cursor-pointer">
+                    Sign in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="w-full sm:w-auto bg-white/50 backdrop-blur-sm border border-primary/20 text-primary px-10 py-4 rounded-[14px] font-bold text-sm hover:bg-white transition-all cursor-pointer">
+                    Sign up
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link href={ROUTES.interview}>
+                  <button className="w-full sm:w-auto bg-primary text-white px-10 py-4 rounded-[14px] font-bold text-sm hover:bg-[#4338CA] transition-all shadow-xl shadow-primary/20 cursor-pointer">
+                    Start Interview
+                  </button>
+                </Link>
+              </Show>
               <a href="#how-it-works" className="w-full sm:w-auto">
                 <button className="w-full bg-white/50 backdrop-blur-sm border border-primary/20 text-primary px-10 py-4 rounded-[14px] font-bold text-sm hover:bg-white transition-all cursor-pointer">
                   Learn More

@@ -4,7 +4,6 @@ export const APP_NAME = "Interview Memory Agent";
 
 export const ROUTES = {
   home: "/",
-  login: "/login",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   interview: "/interview",
