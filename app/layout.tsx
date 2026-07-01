@@ -38,10 +38,30 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ClerkProvider>
-          <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <header className="flex items-center justify-between gap-6 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
             <Link href="/" className="font-semibold tracking-tight">
               {APP_NAME}
             </Link>
+            <nav className="hidden items-center gap-8 md:flex">
+              <Link
+                href="/#features"
+                className="text-sm font-medium text-zinc-700 transition hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                Features
+              </Link>
+              <Link
+                href="/#how-it-works"
+                className="text-sm font-medium text-zinc-700 transition hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                How It Works
+              </Link>
+              <Link
+                href="/#memory"
+                className="text-sm font-medium text-zinc-700 transition hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+              >
+                Memory
+              </Link>
+            </nav>
             <nav className="flex items-center gap-3">
               <Show when="signed-out">
                 <SignInButton mode="modal">
