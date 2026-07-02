@@ -27,7 +27,6 @@ export async function upsertProfile(userId: string, input: OnboardingInput) {
     where: { userId },
     create: {
       userId,
-      currentRole: input.currentRole,
       experience: input.experience,
       githubUrl: input.githubUrl || null,
       linkedinUrl: input.linkedinUrl || null,
@@ -38,7 +37,6 @@ export async function upsertProfile(userId: string, input: OnboardingInput) {
       interviewTypes: input.interviewTypes,
     },
     update: {
-      currentRole: input.currentRole,
       experience: input.experience,
       githubUrl: input.githubUrl || null,
       linkedinUrl: input.linkedinUrl || null,

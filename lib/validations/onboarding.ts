@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const onboardingSchema = z.object({
-  currentRole: z.string().min(1, "Current role is required"),
+  // name: z.string().min(1, "Name is required"),
   experience: z.string().min(1, "Experience level is required"),
   githubUrl: z.string().url("Invalid GitHub URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Invalid LinkedIn URL").optional().or(z.literal("")),

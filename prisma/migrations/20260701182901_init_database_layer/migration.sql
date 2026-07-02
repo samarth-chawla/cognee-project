@@ -23,7 +23,6 @@ CREATE TABLE "User" (
 CREATE TABLE "UserProfile" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "currentRole" TEXT,
     "experience" TEXT,
     "githubUrl" TEXT,
     "linkedinUrl" TEXT,

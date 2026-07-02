@@ -27,7 +27,6 @@ async function main() {
   await prisma.userProfile.upsert({
     where: { userId: user.id },
     update: {
-      currentRole: "Frontend Engineer",
       experience: "3 years",
       githubUrl: "https://github.com/demo-candidate",
       linkedinUrl: "https://www.linkedin.com/in/demo-candidate",
@@ -39,7 +38,6 @@ async function main() {
     },
     create: {
       userId: user.id,
-      currentRole: "Frontend Engineer",
       experience: "3 years",
       githubUrl: "https://github.com/demo-candidate",
       linkedinUrl: "https://www.linkedin.com/in/demo-candidate",

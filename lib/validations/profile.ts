@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const profileUpdateSchema = z.object({
-  currentRole: z.string().min(1).optional(),
   experience: z.string().min(1).optional(),
   githubUrl: z.string().url("Invalid GitHub URL").optional().or(z.literal("")),
   linkedinUrl: z.string().url("Invalid LinkedIn URL").optional().or(z.literal("")),

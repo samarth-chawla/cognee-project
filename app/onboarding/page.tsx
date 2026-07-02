@@ -14,10 +14,9 @@ export default function OnboardingPage() {
   const { setTargetRole } = useSettingsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("Alex Chen");
-  const [currentRole, setCurrentRole] = useState("Software Engineer");
-  const [experience, setExperience] = useState("3-5 Years");
-  const [targetRole, setTargetRoleLocal] = useState("Senior Software Engineer");
+  const [name, setName] = useState("");
+  const [experience, setExperience] = useState("");
+  const [targetRole, setTargetRoleLocal] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 
@@ -136,29 +135,34 @@ export default function OnboardingPage() {
         });
       }, 300);
 
-      setTimeout(() => {
-        clearInterval(progressInterval);
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          clearInterval(progressInterval);
 
-        setParsingProgress(100);
-        setParsed(true);
-        setParsedData({
-          charactersExtracted: result.charactersExtracted,
-          pages: result.pages,
-        });
-        setUploading(false);
-        setParsing(false);
-      }, 500);
+          setParsingProgress(100);
+          setParsed(true);
+          setParsedData({
+            charactersExtracted: result.charactersExtracted,
+            pages: result.pages,
+          });
+          setUploading(false);
+          setParsing(false);
+          resolve();
+        }, 500);
+      });
+      return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       setResumeError(msg);
       setUploading(false);
       setParsing(false);
+      throw err;
     }
   };
 
   const validateStep1 = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!currentRole.trim()) newErrors.currentRole = "Current role is required";
+    if (!name.trim()) newErrors.name = "Name is required";
     if (!experience) newErrors.experience = "Experience is required";
     if (!targetRole.trim()) newErrors.targetRole = "Target role is required";
     if (githubUrl && !validateUrl(githubUrl)) newErrors.githubUrl = "Invalid GitHub URL";
@@ -176,25 +180,24 @@ export default function OnboardingPage() {
         setErrors({ resume: "Please upload a resume" });
         return;
       }
-      if (!parsed) {
-        await handleUploadResume();
-      }
-      if (parsed) {
-        setStep(3);
-      }
+      setStep(3);
     }
   };
 
   const handleComplete = async () => {
     setLoading(true);
     setTargetRole(targetRole);
+    setErrors({});
 
     try {
+      if (resumeFile && !parsed) {
+        await handleUploadResume();
+      }
+
       const res = await fetch("/api/user/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentRole,
           experience,
           githubUrl: githubUrl || "",
           linkedinUrl: linkedinUrl || "",
@@ -224,7 +227,7 @@ export default function OnboardingPage() {
     }, 800);
   };
 
-  const isStep2Disabled = step === 2 && (!resumeFile || uploading || parsing || !parsed);
+  const isStep2Disabled = step === 2 && !resumeFile;
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md overflow-x-hidden flex items-center justify-center py-xxl grid-bg relative">
@@ -279,17 +282,6 @@ export default function OnboardingPage() {
                         placeholder="Alex Chen"
                         type="text"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-bold text-on-surface-variant px-1 uppercase tracking-wider">Current Role</label>
-                      <input
-                        value={currentRole}
-                        onChange={(e) => setCurrentRole(e.target.value)}
-                        className="w-full bg-white border border-outline-variant rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                        placeholder="Software Engineer"
-                        type="text"
-                      />
-                      {errors.currentRole && <p className="text-xs text-error px-1">{errors.currentRole}</p>}
                     </div>
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-on-surface-variant px-1 uppercase tracking-wider">Target Role</label>
@@ -408,17 +400,7 @@ export default function OnboardingPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleUploadResume}
-                      disabled={!resumeFile || uploading || parsing}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-all active:scale-95 cursor-pointer ${
-                        !resumeFile || uploading || parsing ? "bg-outline-variant text-on-surface-variant cursor-not-allowed" : "bg-primary shadow-primary/20 hover:bg-[#4338CA]"
-                      }`}
-                    >
-                      {parsed ? "Extract again" : "Extract Text"}
-                    </button>
-                  </div>
+
                 </div>
               )}
 
@@ -429,10 +411,6 @@ export default function OnboardingPage() {
                     <div className="flex justify-between items-center pb-2 border-b border-outline-variant/30 text-sm">
                       <span className="text-on-surface-variant font-medium">Candidate Name</span>
                       <span className="font-bold text-on-surface">{name}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-outline-variant/30 text-sm">
-                      <span className="text-on-surface-variant font-medium">Current Role</span>
-                      <span className="font-bold text-on-surface">{currentRole}</span>
                     </div>
                     <div className="flex justify-between items-center pb-2 border-b border-outline-variant/30 text-sm">
                       <span className="text-on-surface-variant font-medium">Target Role</span>
@@ -474,13 +452,31 @@ export default function OnboardingPage() {
                       </div>
                     )}
                   </div>
+                  {(uploading || parsing) && (
+                    <div className="space-y-3 mt-4">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className="text-on-surface-variant">
+                          {uploading ? "Uploading resume..." : "Extracting text..."}
+                        </span>
+                        <span className="text-primary font-bold">
+                          {Math.min(uploadProgress + parsingProgress, 100)}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full shadow-[0_0_8px_rgba(30,0,169,0.4)] transition-all duration-500"
+                          style={{ width: `${Math.min(uploadProgress + parsingProgress, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               <footer className="mt-8 pt-6 border-t border-outline-variant/30 flex items-center justify-between">
                 <button
                   onClick={() => step > 1 && setStep(step - 1)}
-                  disabled={step === 1}
+                  disabled={step === 1 || loading}
                   className="px-6 py-3 rounded-lg text-xs font-bold text-on-surface-variant border border-outline-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 cursor-pointer"
                 >
                   Back
@@ -496,18 +492,23 @@ export default function OnboardingPage() {
                       : "bg-primary shadow-primary/20 hover:bg-[#4338CA]"
                   }`}
                 >
-                  {loading ? (
+                  {uploading ? (
+                    <span className="flex items-center gap-2">
+                      Uploading... ({Math.min(uploadProgress + parsingProgress, 100)}%)
+                      <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                    </span>
+                  ) : parsing ? (
+                    <span className="flex items-center gap-2">
+                      Parsing... ({Math.min(uploadProgress + parsingProgress, 100)}%)
+                      <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                    </span>
+                  ) : loading ? (
                     <span className="flex items-center gap-2">
                       Saving...
                       <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
                     </span>
                   ) : success ? (
                     "Success!"
-                  ) : step === 2 && !parsed && resumeFile ? (
-                    <span className="flex items-center gap-2">
-                      Parse First
-                      <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-                    </span>
                   ) : step < 3 ? (
                     "Next Step"
                   ) : (
