@@ -56,27 +56,23 @@ async function main() {
     update: {
       userId: user.id,
       fileUrl: "https://example.com/demo-resume.pdf",
-      parsedText: "Demo resume text for a full stack engineer.",
-      extractedSkills: ["TypeScript", "React", "Node.js", "PostgreSQL"],
-      extractedProjects: [
-        {
-          name: "Interview Memory Agent",
-          summary: "AI-assisted interview practice application.",
-        },
-      ],
+      originalFileName: "demo-resume.pdf",
+      storedFileName: "demo-resume.pdf",
+      fileSize: 204800,
+      mimeType: "application/pdf",
+      pageCount: 2,
+      rawText: "Demo resume text for a full stack engineer.",
     },
     create: {
       id: "demo_resume_001",
       userId: user.id,
       fileUrl: "https://example.com/demo-resume.pdf",
-      parsedText: "Demo resume text for a full stack engineer.",
-      extractedSkills: ["TypeScript", "React", "Node.js", "PostgreSQL"],
-      extractedProjects: [
-        {
-          name: "Interview Memory Agent",
-          summary: "AI-assisted interview practice application.",
-        },
-      ],
+      originalFileName: "demo-resume.pdf",
+      storedFileName: "demo-resume.pdf",
+      fileSize: 204800,
+      mimeType: "application/pdf",
+      pageCount: 2,
+      rawText: "Demo resume text for a full stack engineer.",
     },
   });
 

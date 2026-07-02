@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { ROUTES } from "@/lib/utils/constants";
 
-const ALLOWED_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const ALLOWED_TYPES = ["application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function OnboardingPage() {
@@ -29,8 +29,6 @@ export default function OnboardingPage() {
   const [parsingProgress, setParsingProgress] = useState(0);
   const [parsed, setParsed] = useState(false);
   const [parsedData, setParsedData] = useState<{
-    skills: string[];
-    projects: unknown[];
     charactersExtracted: number;
     pages: number;
   } | null>(null);
@@ -56,7 +54,7 @@ export default function OnboardingPage() {
     if (!file) return;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setResumeError("Only PDF and DOCX files are accepted.");
+      setResumeError("Only PDF files are accepted.");
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -144,8 +142,6 @@ export default function OnboardingPage() {
         setParsingProgress(100);
         setParsed(true);
         setParsedData({
-          skills: [],
-          projects: [],
           charactersExtracted: result.charactersExtracted,
           pages: result.pages,
         });
@@ -350,7 +346,7 @@ export default function OnboardingPage() {
               {step === 2 && (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-on-surface">Upload your resume</h2>
-                  <p className="text-xs text-on-surface-variant">We&apos;ll parse your resume to personalize your interview questions.</p>
+                  <p className="text-xs text-on-surface-variant">We&apos;ll extract raw text from your PDF to personalize future interview questions.</p>
 
                   <div
                     className="border-2 border-dashed border-outline-variant rounded-xl p-6 flex flex-col items-center justify-center bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer group"
@@ -360,7 +356,7 @@ export default function OnboardingPage() {
                       <span className="material-symbols-outlined text-primary">upload_file</span>
                     </div>
                     <p className="text-sm text-on-surface font-semibold">Click to upload or drag and drop</p>
-                    <p className="text-xs text-on-surface-variant mt-1">PDF, DOCX up to 10MB</p>
+                    <p className="text-xs text-on-surface-variant mt-1">PDF up to 10MB</p>
                     {resumeFile && (
                       <div className="mt-3 bg-white px-3 py-1.5 rounded-lg border border-outline-variant flex items-center gap-2">
                         <span className="material-symbols-outlined text-red-500 text-sm">description</span>
@@ -374,7 +370,7 @@ export default function OnboardingPage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf,.docx"
+                      accept=".pdf,application/pdf"
                       className="hidden"
                       onChange={handleFileChange}
                     />
@@ -384,7 +380,7 @@ export default function OnboardingPage() {
                     <div className="space-y-3 mt-4">
                       <div className="flex items-center justify-between text-xs font-semibold">
                         <span className="text-on-surface-variant">
-                          {uploading ? "Uploading..." : parsing ? "Parsing with AI..." : parsed ? "Parsing complete!" : ""}
+                          {uploading ? "Uploading..." : parsing ? "Extracting text..." : parsed ? "Text extracted!" : ""}
                         </span>
                         <span className={parsed ? "text-success-green" : "text-primary"}>
                           {parsed ? "100%" : `${Math.min(uploadProgress + parsingProgress, 100)}%`}
@@ -402,7 +398,7 @@ export default function OnboardingPage() {
                         <div className="bg-success-green/5 border border-success-green/20 rounded-lg p-4 flex items-start gap-3">
                           <span className="material-symbols-outlined text-success-green text-sm mt-0.5">check_circle</span>
                           <div>
-                            <p className="text-xs font-bold text-on-surface">Resume parsed successfully</p>
+                            <p className="text-xs font-bold text-on-surface">Resume text extracted successfully</p>
                             <p className="text-xs text-on-surface-variant mt-1">
                               {parsedData.charactersExtracted.toLocaleString()} characters extracted from {parsedData.pages} page{parsedData.pages !== 1 ? "s" : ""}
                             </p>
@@ -420,7 +416,7 @@ export default function OnboardingPage() {
                         !resumeFile || uploading || parsing ? "bg-outline-variant text-on-surface-variant cursor-not-allowed" : "bg-primary shadow-primary/20 hover:bg-[#4338CA]"
                       }`}
                     >
-                      {parsed ? "Re-parse" : "Parse Resume"}
+                      {parsed ? "Extract again" : "Extract Text"}
                     </button>
                   </div>
                 </div>

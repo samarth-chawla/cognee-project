@@ -62,17 +62,21 @@ model UserProfile {
 }
 
 model Resume {
-  id                String      @id @default(cuid())
-  userId            String
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileUrl           String
-  parsedText        String?
-  extractedSkills   String[]
-  extractedProjects Json?
-  uploadedAt        DateTime    @default(now())
-  interviews        Interview[]
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl          String
+  originalFileName String
+  storedFileName   String
+  fileSize         Int
+  mimeType         String
+  pageCount        Int
+  rawText          String
+  uploadedAt       DateTime    @default(now())
+  interviews       Interview[]
 
   @@index([userId])
+  @@index([storedFileName])
   @@index([uploadedAt])
 }
 
