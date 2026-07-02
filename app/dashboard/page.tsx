@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import Sidebar from "@/components/common/Sidebar";
 import { ROUTES } from "@/lib/utils/constants";
 import { useSettingsStore } from "@/store/useSettingsStore";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user } = useUser();
   const { targetRole } = useSettingsStore();
+  const firstName = user?.firstName || user?.fullName || "there";
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-body-md">
@@ -50,7 +53,7 @@ export default function DashboardPage() {
             {/* Welcome Section */}
             <section className="flex flex-col md:flex-row md:items-end justify-between gap-md py-md">
               <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface">Welcome back, User.</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface">Welcome back, {firstName}.</h2>
                 <p className="text-on-surface-variant text-base mt-1">You&apos;re in the top 5% of candidates this week. Keep up the momentum!</p>
               </div>
               <div className="flex gap-xl">

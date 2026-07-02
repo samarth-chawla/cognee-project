@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { ROUTES } from "@/lib/utils/constants";
 
 interface SidebarProps {
@@ -10,6 +12,20 @@ interface SidebarProps {
 
 export default function Sidebar({ currentRole = "Software Engineer" }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  const displayName = user?.fullName || user?.firstName || "User";
+  const avatarUrl = user?.imageUrl;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut(() => router.push(ROUTES.home));
+  };
 
   const navItems = [
     { name: "Dashboard", href: ROUTES.dashboard, icon: "dashboard" },
@@ -55,21 +71,69 @@ export default function Sidebar({ currentRole = "Software Engineer" }: SidebarPr
         })}
       </div>
 
-      <div className="pt-lg border-t border-outline-variant/20">
+      <div className="pt-lg border-t border-outline-variant/20 space-y-2">
         <div className="mt-md px-4 py-3 rounded-2xl bg-surface-container flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center overflow-hidden shrink-0">
-            <img
-              className="w-full h-full object-cover"
-              alt="User profile"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu2xcTJEgh6AeExYKNVFDMOSh0Knu6LiRMsLDoz4vAvwajF27spYC3JauQygEccryBsB30Pq8qym7M-NMJGPcmoyZvfFqhKNJ3qoU0KNaCBZLkuOUmX12eJjWsKjkkkBi8GRNWC0BkYALt2RRLw36A5r1ZIhSPLsUibRXQzQV1Ag6MnhI-Nimz6RVF0buLAXowvM64TtjgbIWGm3hgPLBtuK9iCwZtBhJkLrAChsx0JecwCh95QWWQSeXRbDgF9sK3M5iCIdi6gxGN"
-            />
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="w-full h-full object-cover" alt={displayName} src={avatarUrl} />
+            ) : (
+              <span className="text-sm font-bold text-primary">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold truncate text-on-surface">User</p>
+            <p className="text-sm font-bold truncate text-on-surface">{displayName}</p>
             <p className="text-[10px] text-on-surface-muted font-medium truncate">{currentRole}</p>
           </div>
         </div>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-muted hover:bg-surface-container transition-all active:scale-95 cursor-pointer"
+        >
+          <span className="material-symbols-outlined">logout</span>
+          <span className="text-sm font-medium">Log out</span>
+        </button>
       </div>
+
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-md"
+          onClick={() => !signingOut && setConfirmOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-error-red">logout</span>
+            </div>
+            <h2 className="text-lg font-bold text-on-surface">Log out?</h2>
+            <p className="text-sm text-on-surface-variant mt-1">
+              You&apos;ll need to sign in again to access your dashboard.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                disabled={signingOut}
+                className="flex-1 py-2.5 rounded-xl bg-surface-container text-sm font-semibold text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="flex-1 py-2.5 rounded-xl bg-error-red text-white text-sm font-bold hover:opacity-90 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {signingOut ? "Logging out..." : "Log out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
