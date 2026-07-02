@@ -16,7 +16,7 @@ export default function Sidebar({ currentRole = "Software Engineer" }: SidebarPr
     { name: "Interviews", href: ROUTES.interview, icon: "video_chat" },
     { name: "Reports", href: ROUTES.reports, icon: "description" },
     { name: "Memory", href: ROUTES.memory, icon: "psychology" },
-    { name: "Flow", href: "/flow", icon: "route" },
+    { name: "Flow", href: ROUTES.flow, icon: "route" },
     { name: "Settings", href: ROUTES.settings, icon: "settings" },
   ];
 
@@ -35,7 +35,9 @@ export default function Sidebar({ currentRole = "Software Engineer" }: SidebarPr
 
       <div className="flex-1 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href ||
+            (item.href !== ROUTES.dashboard && pathname.startsWith(`${item.href}/`));
           return (
             <Link
               key={item.name}

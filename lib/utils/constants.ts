@@ -4,10 +4,11 @@ export const ROUTES = {
   home: "/",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
-  interview: "/interview",
-  reports: "/reports",
-  memory: "/memory",
-  settings: "/settings",
+  interview: "/dashboard/interview",
+  reports: "/dashboard/reports",
+  memory: "/dashboard/memory",
+  flow: "/dashboard/flow",
+  settings: "/dashboard/settings",
 } as const;
 
 export const API = {

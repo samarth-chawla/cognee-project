@@ -3,12 +3,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const isProtectedRoute = createRouteMatcher([
   // App pages (require auth)
   "/onboarding",
-  "/dashboard",
-  "/interview(.*)",
-  "/reports(.*)",
-  "/memory(.*)",
-  "/settings",
-  "/flow",
+  "/dashboard(.*)",
   // API routes (require auth — except webhooks)
   "/api/auth/me",
   "/api/user(.*)",

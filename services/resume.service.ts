@@ -69,6 +69,52 @@ export async function createResume(input: CreateResumeInput) {
   }
 }
 
+export async function upsertResume(input: CreateResumeInput) {
+  try {
+    const existing = await prisma.resume.findFirst({
+      where: { userId: input.userId },
+      orderBy: { uploadedAt: "desc" },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return createResume(input);
+    }
+
+    const resume = await prisma.resume.update({
+      where: { id: existing.id },
+      data: {
+        fileUrl: input.fileUrl,
+        originalFileName: input.originalFileName,
+        storedFileName: input.storedFileName,
+        fileSize: input.fileSize,
+        mimeType: input.mimeType,
+        pageCount: input.pageCount,
+        rawText: input.rawText,
+        uploadedAt: new Date(),
+      },
+    });
+    logger.info("Resume record updated", {
+      id: resume.id,
+      userId: input.userId,
+      pageCount: input.pageCount,
+      fileSize: input.fileSize,
+    });
+    return resume;
+  } catch (cause) {
+    if (cause instanceof ResumeDbError) {
+      throw cause;
+    }
+    const message =
+      cause instanceof Error ? cause.message : "Unknown database error";
+    logger.error("Failed to upsert resume record", {
+      userId: input.userId,
+      error: message,
+    });
+    throw new ResumeDbError("Failed to save resume to database");
+  }
+}
+
 export async function uploadResume(
   input: UploadResumeInput
 ): Promise<UploadResumeResult> {
@@ -88,7 +134,7 @@ export async function uploadResume(
   });
 
   try {
-    const resume = await createResume({
+    const resume = await upsertResume({
       userId: input.userId,
       fileUrl: storedFile.fileUrl,
       originalFileName: storedFile.originalFileName,
