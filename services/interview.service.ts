@@ -21,11 +21,12 @@ export async function generateQuestions(params: {
   role: string;
   count?: number;
   provider?: AIProvider;
+  jobDescription?: string;
 }): Promise<Question[]> {
-  const { userId, role, count = MAX_INTERVIEW_QUESTIONS, provider } = params;
+  const { userId, role, count = MAX_INTERVIEW_QUESTIONS, provider, jobDescription } = params;
 
   const mem = await searchMemory(userId, `weaknesses and background for ${role}`);
-  const prompt = buildQuestionGenPrompt({ role, count, memory: mem.nodes });
+  const prompt = buildQuestionGenPrompt({ role, count, memory: mem.nodes, jobDescription });
 
   const raw = await complete(questionGenSystemPrompt, prompt, {
     provider,

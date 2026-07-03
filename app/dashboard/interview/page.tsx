@@ -48,8 +48,7 @@ export default function InterviewPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [difficulty, setDifficulty] = useState("Mid-Level");
   const [interviewType, setInterviewType] = useState("Technical");
-  const [interviewMode, setInterviewMode] = useState("Voice Only");
-  const [duration, setDuration] = useState(45);
+  const [jobDescription, setJobDescription] = useState("");
 
   // Data Fetching states
   const [profileData, setProfileData] = useState<any>(null);
@@ -129,8 +128,8 @@ export default function InterviewPage() {
     setValidationErrors({});
 
     const payload = selectedCompany === "Other" 
-      ? { company: "Other", companyType, customCompanyName } 
-      : { company: selectedCompany };
+      ? { company: "Other", companyType, customCompanyName, jobDescription } 
+      : { company: selectedCompany, jobDescription };
 
     await start(payload);
   };
@@ -295,6 +294,24 @@ export default function InterviewPage() {
                   </div>
                 </div>
 
+                {/* Job Description (Optional) */}
+                <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Job Description (Optional)</h2>
+                    <span className="text-[10px] px-2.5 py-1 bg-surface-container text-on-surface-variant rounded-full font-bold uppercase tracking-wider">
+                      Optional
+                    </span>
+                  </div>
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the job description (JD) here to tailor the interview questions specifically to the role's requirements..."
+                    rows={4}
+                    className="w-full p-3 bg-white border border-outline-variant rounded-xl focus:ring-primary focus:border-primary outline-none text-sm font-semibold transition-all resize-none"
+                  />
+                </div>
+
+
                 {/* Interview Type Selection */}
                 <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm">
                   <h2 className="text-[11px] font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Interview Type</h2>
@@ -326,59 +343,6 @@ export default function InterviewPage() {
                   </div>
                 </div>
 
-                {/* Mode & Duration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-xl">
-                  <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm">
-                    <h2 className="text-[11px] font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Interview Mode</h2>
-                    <div className="flex flex-col gap-sm">
-                      {[
-                        { mode: "Voice Only", icon: "mic" },
-                        { mode: "Text-based", icon: "keyboard" }
-                      ].map((item) => {
-                        const isSelected = interviewMode === item.mode;
-                        return (
-                          <button
-                            key={item.mode}
-                            onClick={() => setInterviewMode(item.mode)}
-                            className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                              isSelected
-                                ? "border-primary bg-primary-fixed/20"
-                                : "border-outline-variant/30 hover:bg-surface-container"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className={`material-symbols-outlined ${isSelected ? "text-primary" : "text-outline"}`}>{item.icon}</span>
-                              <span className="text-sm font-semibold text-on-surface">{item.mode}</span>
-                            </div>
-                            <div className={`w-4 h-4 rounded-full border-4 ${isSelected ? "border-primary" : "border-outline-variant"}`}></div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm flex flex-col justify-between">
-                    <h2 className="text-[11px] font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Duration</h2>
-                    <div className="flex flex-col gap-6">
-                      <div className="flex justify-between items-end">
-                        <span className="text-3xl font-extrabold text-primary">{duration}</span>
-                        <span className="text-[10px] font-bold text-on-surface-variant pb-1">MINUTES</span>
-                      </div>
-                      <input
-                        type="range"
-                        max="90"
-                        min="15"
-                        value={duration}
-                        onChange={(e) => setDuration(Number(e.target.value))}
-                        className="w-full accent-primary cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[10px] font-bold text-on-surface-variant">
-                        <span>15m</span>
-                        <span>45m</span>
-                        <span>90m</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* CTA Card */}
                 <div className="bg-primary p-6 rounded-xxl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden text-white">
