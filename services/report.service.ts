@@ -1,48 +1,106 @@
-import { query } from "@/lib/db/neon";
-import { uid } from "@/lib/utils";
+import "server-only";
+
+import { prisma } from "@/lib/db/prisma";
 import type { Evaluation, Report } from "@/types";
 
-/** Persist a report row (JSONB evaluation) and return it. */
+/** Persist evaluation data to the Report table via Prisma and return a Report object. */
 export async function saveReport(
   userId: string,
   interviewId: string,
-  evaluation: Evaluation
+  evaluation: Omit<Evaluation, "id" | "interviewId" | "createdAt">
 ): Promise<Report> {
-  const report: Report = {
-    id: uid("rpt"),
-    interviewId,
-    userId,
-    evaluation,
-    createdAt: new Date().toISOString(),
-  };
-
-  // NOTE: requires DATABASE_URL + schema.sql applied.
-  await query(
-    `INSERT INTO reports (interview_id, user_id, evaluation)
-     VALUES ($1, $2, $3)`,
-    [interviewId, userId, JSON.stringify(evaluation)]
-  ).catch(() => {
-    // Swallow in demo mode when DB is unavailable.
+  const report = await prisma.report.upsert({
+    where: { interviewId },
+    create: {
+      interviewId,
+      overallScore: evaluation.overallScore,
+      technicalScore: evaluation.technicalScore,
+      communicationScore: evaluation.communicationScore,
+      confidenceScore: evaluation.confidenceScore,
+      behavioralScore: evaluation.behavioralScore,
+      problemSolvingScore: evaluation.problemSolvingScore,
+      strengths: evaluation.strengths,
+      weaknesses: evaluation.weaknesses,
+      missingTopics: evaluation.missingTopics,
+      recommendations: evaluation.recommendations,
+    },
+    update: {
+      overallScore: evaluation.overallScore,
+      technicalScore: evaluation.technicalScore,
+      communicationScore: evaluation.communicationScore,
+      confidenceScore: evaluation.confidenceScore,
+      behavioralScore: evaluation.behavioralScore,
+      problemSolvingScore: evaluation.problemSolvingScore,
+      strengths: evaluation.strengths,
+      weaknesses: evaluation.weaknesses,
+      missingTopics: evaluation.missingTopics,
+      recommendations: evaluation.recommendations,
+    },
   });
 
-  return report;
+  return {
+    id: report.id,
+    interviewId: report.interviewId,
+    userId,
+    evaluation: {
+      id: report.id,
+      interviewId: report.interviewId,
+      overallScore: report.overallScore,
+      technicalScore: report.technicalScore,
+      communicationScore: report.communicationScore,
+      confidenceScore: report.confidenceScore,
+      behavioralScore: report.behavioralScore,
+      problemSolvingScore: report.problemSolvingScore,
+      strengths: report.strengths,
+      weaknesses: report.weaknesses,
+      missingTopics: report.missingTopics,
+      recommendations: report.recommendations,
+      questionFeedback: evaluation.questionFeedback,
+      createdAt: report.createdAt.toISOString(),
+    },
+    createdAt: report.createdAt.toISOString(),
+  };
+}
+
+function prismaReportToReport(report: any, userId: string): Report {
+  return {
+    id: report.id,
+    interviewId: report.interviewId,
+    userId,
+    evaluation: {
+      id: report.id,
+      interviewId: report.interviewId,
+      overallScore: report.overallScore,
+      technicalScore: report.technicalScore,
+      communicationScore: report.communicationScore,
+      confidenceScore: report.confidenceScore,
+      behavioralScore: report.behavioralScore,
+      problemSolvingScore: report.problemSolvingScore,
+      strengths: report.strengths,
+      weaknesses: report.weaknesses,
+      missingTopics: report.missingTopics,
+      recommendations: report.recommendations,
+      questionFeedback: [],
+      createdAt: report.createdAt.toISOString(),
+    },
+    createdAt: report.createdAt.toISOString(),
+  };
 }
 
 export async function listReports(userId: string): Promise<Report[]> {
-  return query<Report>(
-    `SELECT id, interview_id AS "interviewId", user_id AS "userId",
-            evaluation, created_at AS "createdAt"
-     FROM reports WHERE user_id = $1 ORDER BY created_at DESC`,
-    [userId]
-  ).catch(() => [] as Report[]);
+  const reports = await prisma.report.findMany({
+    where: { interview: { userId } },
+    include: { interview: { select: { userId: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return reports.map((r) => prismaReportToReport(r, r.interview.userId));
 }
 
 export async function getReport(reportId: string): Promise<Report | null> {
-  const rows = await query<Report>(
-    `SELECT id, interview_id AS "interviewId", user_id AS "userId",
-            evaluation, created_at AS "createdAt"
-     FROM reports WHERE id = $1 LIMIT 1`,
-    [reportId]
-  ).catch(() => [] as Report[]);
-  return rows[0] ?? null;
+  const report = await prisma.report.findUnique({
+    where: { id: reportId },
+    include: { interview: { select: { userId: true } } },
+  });
+  if (!report) return null;
+  return prismaReportToReport(report, report.interview.userId);
 }

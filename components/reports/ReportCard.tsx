@@ -12,7 +12,7 @@ export function ReportCard({ report }: { report: Report }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        <p className="text-zinc-600">{evaluation.summary}</p>
+        <p className="text-zinc-600">{evaluation.recommendations?.[0] ?? "No summary available."}</p>
         <div>
           <span className="font-medium">Strengths:</span>{" "}
           {evaluation.strengths.join(", ") || "—"}

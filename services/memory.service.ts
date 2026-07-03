@@ -14,7 +14,7 @@ export async function rememberEvaluation(
     ...evaluation.weaknesses.map((w) =>
       addMemory(userId, w, "weakness", interviewId)
     ),
-    addMemory(userId, evaluation.summary, "note", interviewId),
+    addMemory(userId, evaluation.recommendations?.[0] ?? "", "note", interviewId),
   ]);
   await cognify(userId);
 }

@@ -102,13 +102,13 @@ export function useInterview() {
     if (!current) return null;
     setLoading(true);
     try {
-      const res = await fetch(API.evaluation, {
+      const res = await fetch(API.interviewEnd, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interviewId: current.id, provider }),
+        body: JSON.stringify({ interviewId: current.id }),
       });
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
+      if (!json.success) throw new Error(json.error);
       return json.data as Evaluation;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to evaluate");
@@ -116,7 +116,7 @@ export function useInterview() {
     } finally {
       setLoading(false);
     }
-  }, [current, provider]);
+  }, [current]);
 
   return { current, loading, error, start, submitAnswer, finish, reset };
 }

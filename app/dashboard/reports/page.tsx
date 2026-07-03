@@ -112,31 +112,49 @@ export default function ReportsPage() {
                       </div>
                     </div>
 
-                    {/* Summary */}
+                    {/* Score Breakdown */}
                     <div className="space-y-2">
                       <h4 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">short_text</span> Summary Overview
+                        <span className="material-symbols-outlined text-sm">bar_chart</span> Score Breakdown
                       </h4>
-                      <p className="text-sm leading-relaxed text-on-surface-variant">{evaluation.summary}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {[
+                          { label: "Technical", value: evaluation.technicalScore },
+                          { label: "Communication", value: evaluation.communicationScore },
+                          { label: "Confidence", value: evaluation.confidenceScore },
+                          { label: "Behavioral", value: evaluation.behavioralScore },
+                          { label: "Problem Solving", value: evaluation.problemSolvingScore },
+                        ].map((item) => (
+                          <div key={item.label} className="bg-surface-container/30 p-3 rounded-xl space-y-1">
+                            <div className="flex justify-between items-center text-xs font-semibold">
+                              <span className="text-on-surface-variant">{item.label}</span>
+                              <span className="text-primary font-extrabold">{item.value}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                              <div className="h-full bg-primary transition-all" style={{ width: `${item.value}%` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    {/* Criteria Ratings */}
-                    {evaluation.criteria && evaluation.criteria.length > 0 && (
+                    {/* Question Feedback */}
+                    {evaluation.questionFeedback && evaluation.questionFeedback.length > 0 && (
                       <div className="space-y-4">
                         <h4 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-sm">rule</span> Criteria Breakdown
+                          <span className="material-symbols-outlined text-sm">rule</span> Per-Question Feedback
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {evaluation.criteria.map((c, idx) => (
+                        <div className="flex flex-col gap-3">
+                          {evaluation.questionFeedback.map((qf, idx) => (
                             <div key={idx} className="bg-surface-container/30 p-4 rounded-xl space-y-2">
                               <div className="flex justify-between items-center text-xs font-semibold">
-                                <span className="text-on-surface font-bold">{c.name}</span>
-                                <span className="text-primary font-extrabold">{c.score} / 10</span>
+                                <span className="text-on-surface font-bold">Q{qf.sequence}: {qf.question}</span>
+                                <span className="text-primary font-extrabold">{qf.score} / 10</span>
                               </div>
-                              <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: `${c.score * 10}%` }}></div>
+                              <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                                <div className="h-full bg-primary" style={{ width: `${qf.score * 10}%` }}></div>
                               </div>
-                              {c.feedback && <p className="text-[11px] text-on-surface-variant leading-relaxed">{c.feedback}</p>}
+                              {qf.feedback && <p className="text-[11px] text-on-surface-variant leading-relaxed">{qf.feedback}</p>}
                             </div>
                           ))}
                         </div>

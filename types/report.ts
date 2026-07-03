@@ -1,19 +1,26 @@
 import type { ID } from "./index";
 
-export interface EvaluationCriterion {
-  name: string;
-  score: number;
+export interface QuestionFeedback {
+  sequence: number;
+  question: string;
   feedback: string;
+  score: number;
 }
 
 export interface Evaluation {
   id: ID;
   interviewId: ID;
   overallScore: number;
-  summary: string;
+  technicalScore: number;
+  communicationScore: number;
+  confidenceScore: number;
+  behavioralScore: number;
+  problemSolvingScore: number;
   strengths: string[];
   weaknesses: string[];
-  criteria: EvaluationCriterion[];
+  missingTopics: string[];
+  recommendations: string[];
+  questionFeedback: QuestionFeedback[];
   createdAt: string;
 }
 

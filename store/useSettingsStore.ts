@@ -14,7 +14,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      provider: "openai",
+      provider: "gemini",
       targetRole: "Software Engineer",
       voiceEnabled: true,
       setProvider: (provider) => set({ provider }),
