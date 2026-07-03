@@ -1,1 +1,1 @@
-export { generateQuestions } from "@/services/interview.service";
+// Deprecated in Phase 2

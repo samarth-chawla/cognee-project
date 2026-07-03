@@ -2,8 +2,6 @@ import { prisma } from "@/lib/db/prisma";
 import { Difficulty } from "@prisma/client";
 import { complete, parseJSON } from "@/lib/ai";
 import {
-  buildQuestionGenPrompt,
-  questionGenSystemPrompt,
   buildEvaluationPrompt,
   evaluationSystemPrompt,
 } from "@/lib/ai/prompts";
@@ -17,26 +15,6 @@ import type {
 } from "@/types";
 import { MAX_INTERVIEW_QUESTIONS } from "@/lib/utils/constants";
 
-/** Generate personalized interview questions using memory + LLM. */
-export async function generateQuestions(params: {
-  userId: string;
-  role: string;
-  count?: number;
-  provider?: AIProvider;
-  jobDescription?: string;
-}): Promise<Question[]> {
-  const { userId, role, count = MAX_INTERVIEW_QUESTIONS, provider, jobDescription } = params;
-
-  const mem = await searchMemory(userId, `weaknesses and background for ${role}`);
-  const prompt = buildQuestionGenPrompt({ role, count, memory: mem.nodes, jobDescription });
-
-  const raw = await complete(questionGenSystemPrompt, prompt, {
-    provider,
-    json: true,
-  });
-  const parsed = parseJSON<{ questions: Omit<Question, "id">[] }>(raw);
-  return parsed.questions.map((q) => ({ ...q, id: uid("q") }));
-}
 
 /** Evaluate answered questions and return a structured evaluation. */
 export async function evaluateInterview(params: {

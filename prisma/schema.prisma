@@ -13,6 +13,7 @@ enum InterviewStatus {
   ONGOING
   COMPLETED
   CANCELLED
+  FAILED
 }
 
 enum InterviewMode {
@@ -129,15 +130,17 @@ model Interview {
 }
 
 model Question {
-  id          String     @id @default(cuid())
-  interviewId String
-  interview   Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  sequence    Int
-  question    String
-  category    String
-  difficulty  Difficulty
-  answers     Answer[]
-  createdAt   DateTime   @default(now())
+  id                 String     @id @default(cuid())
+  interviewId        String
+  interview          Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  sequence           Int
+  displayQuestion    String
+  ttsTranscript      String
+  expectedDiscussion String?
+  category           String
+  difficulty         Difficulty
+  answers            Answer[]
+  createdAt          DateTime   @default(now())
 
   @@unique([interviewId, sequence])
   @@index([interviewId])

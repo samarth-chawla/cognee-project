@@ -25,7 +25,7 @@ export const API = {
 } as const;
 
 export const QUESTION_TYPES = ["behavioral", "technical", "system_design", "coding"] as const;
-export const DEFAULT_MODELS = { openai: "gpt-4o-mini", gemini: "gemini-1.5-flash" } as const;
+export const DEFAULT_MODELS = { openai: "gpt-4o-mini", gemini: "gemini-3.5-flash" } as const;
 export const MAX_INTERVIEW_QUESTIONS = 8;
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;

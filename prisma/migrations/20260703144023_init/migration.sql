@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "InterviewStatus" AS ENUM ('PENDING', 'ONGOING', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "InterviewStatus" AS ENUM ('PENDING', 'GENERATING', 'READY', 'ONGOING', 'COMPLETED', 'CANCELLED', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "InterviewMode" AS ENUM ('VOICE', 'TEXT', 'HYBRID');
@@ -42,9 +42,12 @@ CREATE TABLE "Resume" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "fileUrl" TEXT NOT NULL,
-    "parsedText" TEXT,
-    "extractedSkills" TEXT[],
-    "extractedProjects" JSONB,
+    "originalFileName" TEXT NOT NULL,
+    "storedFileName" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "mimeType" TEXT NOT NULL,
+    "pageCount" INTEGER NOT NULL,
+    "rawText" TEXT NOT NULL,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Resume_pkey" PRIMARY KEY ("id")
@@ -71,7 +74,11 @@ CREATE TABLE "Interview" (
     "resumeId" TEXT,
     "jobDescriptionId" TEXT,
     "company" TEXT,
+    "companyType" TEXT,
+    "customCompanyName" TEXT,
     "role" TEXT NOT NULL,
+    "interviewType" TEXT,
+    "difficulty" "Difficulty",
     "status" "InterviewStatus" NOT NULL DEFAULT 'PENDING',
     "startedAt" TIMESTAMP(3),
     "endedAt" TIMESTAMP(3),
@@ -86,7 +93,9 @@ CREATE TABLE "Question" (
     "id" TEXT NOT NULL,
     "interviewId" TEXT NOT NULL,
     "sequence" INTEGER NOT NULL,
-    "question" TEXT NOT NULL,
+    "displayQuestion" TEXT NOT NULL,
+    "ttsTranscript" TEXT NOT NULL,
+    "expectedDiscussion" TEXT,
     "category" TEXT NOT NULL,
     "difficulty" "Difficulty" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -160,6 +169,9 @@ CREATE INDEX "UserProfile_targetRole_idx" ON "UserProfile"("targetRole");
 
 -- CreateIndex
 CREATE INDEX "Resume_userId_idx" ON "Resume"("userId");
+
+-- CreateIndex
+CREATE INDEX "Resume_storedFileName_idx" ON "Resume"("storedFileName");
 
 -- CreateIndex
 CREATE INDEX "Resume_uploadedAt_idx" ON "Resume"("uploadedAt");
