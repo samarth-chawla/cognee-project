@@ -127,9 +127,15 @@ export default function InterviewPage() {
     }
     setValidationErrors({});
 
+    const mapDifficulty = (diff: string) => {
+      if (diff === "Junior") return "EASY";
+      if (diff === "Senior+") return "HARD";
+      return "MEDIUM";
+    };
+
     const payload = selectedCompany === "Other" 
-      ? { company: "Other", companyType, customCompanyName, jobDescription } 
-      : { company: selectedCompany, jobDescription };
+      ? { company: "Other", companyType, customCompanyName, jobDescription, difficulty: mapDifficulty(difficulty), interviewType } 
+      : { company: selectedCompany, jobDescription, difficulty: mapDifficulty(difficulty), interviewType };
 
     await start(payload);
   };

@@ -23,8 +23,29 @@ export function useInterview() {
         body: JSON.stringify({ role: targetRole, provider, ...payload }),
       });
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
-      setInterview(json.data as Interview);
+      
+      if (!json.success && !json.ok) throw new Error(json.message || json.error);
+      
+      // Phase 2 Step 1 returns { interviewId, status: "GENERATING" }.
+      // To prevent the UI from breaking (which expects questions), we supply a dummy question for testing.
+      if (json.data?.status === "GENERATING") {
+        setInterview({
+          id: json.data.interviewId,
+          role: targetRole,
+          questions: [
+            { 
+              id: "temp-1", 
+              sequence: 1, 
+              prompt: "API called successfully! (Phase 2 Step 1). Gemini Generation will be implemented in Step 2.", 
+              category: "General", 
+              difficulty: "MEDIUM", 
+              type: "intro" 
+            }
+          ]
+        } as any);
+      } else {
+        setInterview(json.data as Interview);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start");
     } finally {

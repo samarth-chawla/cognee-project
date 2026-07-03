@@ -8,6 +8,8 @@ datasource db {
 
 enum InterviewStatus {
   PENDING
+  GENERATING
+  READY
   ONGOING
   COMPLETED
   CANCELLED
@@ -106,7 +108,11 @@ model Interview {
   jobDescriptionId String?
   jobDescription   JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
   company          String?
+  companyType      String?
+  customCompanyName String?
   role             String
+  interviewType    String?
+  difficulty       Difficulty?
   status           InterviewStatus @default(PENDING)
   startedAt        DateTime?
   endedAt          DateTime?
