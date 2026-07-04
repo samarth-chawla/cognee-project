@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "deepgram-js-voice-agent": {
+      "source": "deepgram/deepgram-js-sdk",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/deepgram-js-voice-agent/SKILL.md",
+      "computedHash": "fccb50dbdf5ed165f32fb41b3469e50cb49af096a99e56901c330d7ef8bf5f9e"
+    }
+  }
+}

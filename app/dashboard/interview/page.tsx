@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Link from "next/link";
-import { WaveformShader } from "@/components/ui/WaveformShader";
 
 const setupSchema = z.object({
   company: z.string().min(1),
@@ -30,18 +29,15 @@ const setupSchema = z.object({
   }
 });
 import { useInterview } from "@/hooks/useInterview";
-import { useInterviewStore } from "@/store/useInterviewStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { useTTS } from "@/hooks/useTTS";
 import { ROUTES } from "@/lib/utils/constants";
-import { nowISO } from "@/lib/utils";
 import Sidebar from "@/components/common/Sidebar";
+import VoiceInterview from "@/components/interview/VoiceInterview";
 
 export default function InterviewPage() {
   const router = useRouter();
-  const { current, loading, error, start, submitAnswer, finish, reset, cancel } = useInterview();
-  const { currentIndex, currentQuestion } = useInterviewStore();
-  const { targetRole, setTargetRole, provider } = useSettingsStore();
+  const { current, loading, error, start, cancel } = useInterview();
+  const { targetRole, setTargetRole } = useSettingsStore();
 
   // Setup form states
   const [selectedCompany, setSelectedCompany] = useState("Google");
@@ -56,12 +52,6 @@ export default function InterviewPage() {
   const [profileData, setProfileData] = useState<any>(null);
   const [insightsData, setInsightsData] = useState<any>(null);
   const [setupLoading, setSetupLoading] = useState(true);
-
-  // Live Interview states
-  const [answer, setAnswer] = useState("");
-  const [timer, setTimer] = useState("00:00:00");
-  const [showHint, setShowHint] = useState(false);
-  const [evaluationLoading, setEvaluationLoading] = useState(false);
 
   useEffect(() => {
     async function fetchSetupData() {
@@ -93,31 +83,6 @@ export default function InterviewPage() {
     fetchSetupData();
   }, [setTargetRole]);
 
-  const activeQuestion = currentQuestion();
-  const done = current && currentIndex >= (current.questions?.length ?? 0);
-
-
-  // Active Timer Effect
-  useEffect(() => {
-    if (!current) return;
-    let seconds = 0;
-    const interval = setInterval(() => {
-      seconds++;
-      const hrs = Math.floor(seconds / 3600).toString().padStart(2, "0");
-      const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-      const secs = (seconds % 60).toString().padStart(2, "0");
-      setTimer(`${hrs}:${mins}:${secs}`);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [current]);
-
-  // Reset answer/hint when question changes
-  useEffect(() => {
-    setAnswer("");
-    setShowHint(false);
-  }, [activeQuestion?.id]);
-
-
   const handleStart = async () => {
     const result = setupSchema.safeParse({
       company: selectedCompany,
@@ -142,24 +107,6 @@ export default function InterviewPage() {
       : { company: selectedCompany, jobDescription, difficulty: mapDifficulty(difficulty), interviewType };
 
     await start(payload);
-  };
-
-  const handleNext = async () => {
-    if (!activeQuestion) return;
-    await submitAnswer({
-      sequence: activeQuestion.sequence,
-      text: answer || "Candidate chose not to answer or provided no response.",
-      createdAt: nowISO(),
-    });
-  };
-
-  const handleFinish = async () => {
-    setEvaluationLoading(true);
-    const evalData = await finish();
-    setEvaluationLoading(false);
-    if (evalData) {
-      router.push(ROUTES.reports);
-    }
   };
 
   // State 1: Setup Screen
@@ -484,279 +431,6 @@ export default function InterviewPage() {
     );
   }
 
-  // State 2: Active Live Interview Screen
-  return (
-    <div className="min-h-screen bg-surface text-on-surface font-body-md overflow-hidden h-screen flex flex-col">
-      {/* TopNavBar */}
-      <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 shadow-sm px-gutter h-16 flex justify-between items-center max-w-full">
-        <div className="flex items-center gap-md">
-          <span className="text-lg font-bold text-primary">InterviewAI</span>
-        </div>
-        <div className="flex items-center gap-md bg-surface-container px-4 py-1.5 rounded-full border border-outline-variant/20">
-          <span className="material-symbols-outlined text-primary-container text-sm">work</span>
-          <span className="text-sm font-bold text-on-surface">{targetRole} Interview</span>
-        </div>
-        <div className="flex items-center gap-md">
-          <div className="flex items-center gap-sm bg-error-container/20 px-3 py-1.5 rounded-lg border border-error-red/10">
-            <span className="material-symbols-outlined text-error-red text-sm">timer</span>
-            <span className="text-sm font-bold text-error-red">{timer}</span>
-          </div>
-          <button
-            onClick={cancel}
-            className="px-4 py-1.5 border border-error-red text-error-red rounded-lg text-xs font-bold hover:bg-error-red hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
-          >
-            End Interview
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content Layout */}
-      <main className="flex-1 mt-16 flex overflow-hidden">
-        {/* Left Sidebar: Progress */}
-        <aside className="w-72 bg-surface border-r border-outline-variant/30 flex flex-col p-lg gap-lg overflow-y-auto">
-          <div>
-            <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider block mb-2">Current Progress</span>
-            <div className="flex items-end gap-sm">
-              <h3 className="text-lg font-bold text-on-surface">Prompt {done ? currentIndex : currentIndex + 1} of {current.questions?.length ?? 0}</h3>
-            </div>
-            <div className="mt-3 px-3 py-1 bg-surface-container rounded-lg inline-flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-tertiary"></span>
-              <span className="text-xs text-on-surface-variant font-semibold">Mode: Active Simulation</span>
-            </div>
-          </div>
-          <nav className="flex-1 flex flex-col gap-2">
-            {(current.questions ?? []).map((q, idx) => {
-              const isPassed = idx < currentIndex;
-              const isCurrent = idx === currentIndex;
-              return (
-                <div
-                  key={q.id}
-                  className={`flex items-center gap-3 p-3 rounded-xxl transition-all ${
-                    isCurrent
-                      ? "bg-primary-container/10 text-primary-container border border-primary-container/20 font-bold"
-                      : "text-on-surface-variant/80"
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                    isPassed
-                      ? "bg-success-green/10 text-success-green"
-                      : isCurrent
-                      ? "bg-primary text-white"
-                      : "bg-surface-container"
-                  }`}>
-                    {isPassed ? (
-                      <span className="material-symbols-outlined text-[14px]">check</span>
-                    ) : (
-                      idx + 1
-                    )}
-                  </div>
-                  <span className="text-xs truncate">{q.type || `Step ${idx + 1}`}</span>
-                </div>
-              );
-            })}
-          </nav>
-          <div className="bg-surface-container border border-outline-variant/30 rounded-xxl p-4">
-            <p className="text-xs text-on-surface-variant italic leading-relaxed">
-              &quot;ARIA evaluates your technical depth, structured thinking, and pacing.&quot;
-            </p>
-            <p className="text-[9px] font-bold text-primary-container mt-2 uppercase tracking-wider">— AI Coach Tip</p>
-          </div>
-        </aside>
-
-        {/* Center Panel: Main Interview */}
-        <section className="flex-1 flex flex-col bg-surface-container-low overflow-y-auto relative p-6">
-          <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center gap-6 pb-20">
-            {/* Prompt Card */}
-            {activeQuestion ? (
-              <div className="bg-white rounded-xxl p-6 shadow-xl border border-outline-variant/30 relative">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded tracking-wider uppercase">
-                    {activeQuestion.type || "Interview Prompt"}
-                  </span>
-                  <span className="text-[10px] px-2.5 py-1 bg-tertiary-fixed text-tertiary rounded-full font-bold uppercase tracking-wider">
-                    MEDIUM
-                  </span>
-                </div>
-                <h2 className="text-xl md:text-2xl font-bold text-on-surface mb-4 leading-snug">
-                  {activeQuestion.prompt}
-                </h2>
-                <div className="flex gap-4 text-xs font-semibold text-on-surface-variant">
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">history</span>
-                    <span>Allocated: 3 mins</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">star</span>
-                    <span>Topic: {activeQuestion.type || "Core Technology"}</span>
-                  </div>
-                </div>
-              </div>
-            ) : done ? (
-              <div className="bg-white rounded-xxl p-8 shadow-xl border border-outline-variant/30 text-center space-y-4">
-                <span className="material-symbols-outlined text-success-green text-5xl fill-current">check_circle</span>
-                <h2 className="text-2xl font-bold">All questions answered!</h2>
-                <p className="text-sm text-on-surface-variant max-w-md mx-auto">
-                  Click below to finish and let ARIA compile your memory records, scoring metrics, and communication feedbacks.
-                </p>
-                <button
-                  onClick={handleFinish}
-                  disabled={evaluationLoading}
-                  className="bg-primary text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
-                >
-                  {evaluationLoading ? (
-                    <>
-                      Evaluating Session...
-                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    </>
-                  ) : (
-                    <>
-                      Finish & Evaluate
-                      <span className="material-symbols-outlined">analytics</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            ) : null}
-
-            {/* AI Avatar Card */}
-            <div className="flex justify-center">
-              <div className="relative group">
-                <div className="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden ai-glow">
-                  <img
-                    className="w-full h-full object-cover"
-                    alt="AI Avatar"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu2xBsZayqErBrWQXSnNoUZGLIGAiPp_I-Pnws-c2JZ79W23sOBqggulu4nc27QXplOv0f3IHEtBReQz6MZlgbJIGg9Hi2phVnmi8ZuhKH4ZB1Sh3UMSMRF2I-15rx88ZvksqM1JhSB93AuC0pz4CX04P1aGeAQhSE_aZZhT15ku1JjG9F7zNYoeCDsP9XfAuU1we52KYz5MBY6XsoduTqUjT5sNQSC8MHovHVR8l6dzQv3kRjLiQQpXw0Qxx3fGFUr1Y3_r1pM5Qz"
-                  />
-                </div>
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white px-3 py-0.5 rounded-full shadow-md border border-outline-variant/20 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
-                  <span className="text-[10px] font-bold text-on-surface">ARIA</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Waveform Visualization */}
-            {!done && (
-              <div className="space-y-4">
-                <div className="w-full h-24 relative overflow-hidden rounded-xl border border-outline-variant/20">
-                  <WaveformShader />
-                </div>
-
-                {/* Input Text Box */}
-                <div className="bg-white rounded-xxl border border-outline-variant/30 p-4 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider block mb-2">Your Answer</span>
-                  <textarea
-                    rows={4}
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    placeholder="Type your response here..."
-                    className="w-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Floating Bottom Control Bar */}
-          {!done && (
-            <div className="absolute bottom-6 left-0 right-0 px-6 pointer-events-none z-30">
-              <div className="max-w-xl mx-auto bg-white/95 backdrop-blur-xl border border-outline-variant/30 rounded-xxl shadow-2xl p-2.5 flex items-center justify-between gap-4 pointer-events-auto">
-                <div className="flex gap-2">
-                  <button
-                    onClick={cancel}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container transition-all active:scale-95 text-on-surface-variant hover:text-error cursor-pointer"
-                    title="Cancel Session"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">cancel</span>
-                  </button>
-                </div>
-                
-                <button
-                  onClick={() => setShowHint(!showHint)}
-                  className={`flex-1 h-10 border rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${
-                    showHint
-                      ? "border-primary bg-primary-fixed/20 text-primary"
-                      : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">lightbulb</span>
-                  {showHint ? "Hide Hint" : "Ask Hint"}
-                </button>
-                
-                <button
-                  onClick={handleNext}
-                  disabled={loading}
-                  className="flex-1 h-10 bg-primary text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <span>Submit Answer</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
-              </div>
-
-              {showHint && (
-                <div className="max-w-xl mx-auto mt-2 bg-secondary-fixed/50 backdrop-blur-md p-4 rounded-xl border border-secondary-fixed text-xs font-medium text-on-secondary-fixed-variant shadow-md pointer-events-auto animate-fade-in">
-                  <p className="font-bold flex items-center gap-1 mb-1">
-                    <span className="material-symbols-outlined text-xs">info</span>
-                    ARIA&apos;s Hint:
-                  </p>
-                  <p>
-                    {activeQuestion?.type === "technical"
-                      ? "Mention virtual DOM diffing, fiber reconciliation, and how state updates trigger batch DOM modifications."
-                      : "Structure your explanation focusing on scaling constraints, consensus mechanisms, or specific data trade-offs."}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Right Sidebar: AI Insights */}
-        <aside className="w-80 bg-surface border-l border-outline-variant/30 flex flex-col p-lg gap-lg overflow-y-auto">
-          {/* AI Memory Profile */}
-          <div className="bg-white border border-outline-variant/30 rounded-xxl p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>neurology</span>
-              <span className="text-[10px] font-bold tracking-wider text-on-surface uppercase">AI MEMORY PROFILE</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center bg-success-green/5 px-3 py-2 rounded-lg text-xs font-semibold">
-                <span className="text-on-surface">Strong in React</span>
-                <span className="material-symbols-outlined text-success-green text-[16px]">trending_up</span>
-              </div>
-              <div className="flex justify-between items-center bg-error/5 px-3 py-2 rounded-lg text-xs font-semibold">
-                <span className="text-on-surface">Weak in DP</span>
-                <span className="material-symbols-outlined text-error text-[16px]">trending_down</span>
-              </div>
-              <div className="flex justify-between items-center bg-primary/5 px-3 py-2 rounded-lg text-xs font-semibold">
-                <span className="text-on-surface">Confidence improving</span>
-                <span className="material-symbols-outlined text-primary text-[16px]">bolt</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Session Guidelines */}
-          <div className="bg-white border border-outline-variant/30 rounded-xxl p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-secondary">info</span>
-              <span className="text-[10px] font-bold tracking-wider text-on-surface uppercase">Session Checklist</span>
-            </div>
-            <ul className="space-y-2 text-xs text-on-surface-variant font-medium">
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-success-green text-sm">check</span>
-                Speak clearly at constant pacing
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-success-green text-sm">check</span>
-                Analyze edge cases aloud
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-success-green text-sm">check</span>
-                Utilize the STAR framework
-              </li>
-            </ul>
-          </div>
-        </aside>
-      </main>
-    </div>
-  );
+  // State 2: Active Voice Interview (Deepgram Voice Agent V2)
+  return <VoiceInterview interview={current} onExit={cancel} />;
 }

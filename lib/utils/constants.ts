@@ -19,6 +19,10 @@ export const API = {
   interviewEnd: "/api/interview/end",
   interviewCancel: "/api/interview/cancel",
 
+  // Voice Agent (V2) — persistent Deepgram Voice Agent interview.
+  interviewVoiceToken: "/api/interview/voice/token",
+  interviewVoiceAnswer: "/api/interview/voice/answer",
+
   evaluation: "/api/reports/generate",
   speech: "/api/speech/transcribe",
   memory: "/api/memory/timeline",
