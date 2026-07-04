@@ -42,7 +42,6 @@ export default function InterviewPage() {
   const { current, loading, error, start, submitAnswer, finish, reset, cancel } = useInterview();
   const { currentIndex, currentQuestion } = useInterviewStore();
   const { targetRole, setTargetRole, provider } = useSettingsStore();
-  const { state: ttsState, error: ttsError, speak, stop: stopTTS } = useTTS();
 
   // Setup form states
   const [selectedCompany, setSelectedCompany] = useState("Google");
@@ -112,22 +111,12 @@ export default function InterviewPage() {
     return () => clearInterval(interval);
   }, [current]);
 
-  // Auto-speak ttsTranscript when question changes (including first question on interview start)
+  // Reset answer/hint when question changes
   useEffect(() => {
     setAnswer("");
     setShowHint(false);
-    if (activeQuestion?.ttsTranscript) {
-      speak(activeQuestion.ttsTranscript);
-    }
-    // speak is stable enough — only re-run when the displayed question actually changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeQuestion?.id]);
 
-
-  // Stop TTS when interview is reset / unmounted
-  useEffect(() => {
-    if (!current) stopTTS();
-  }, [current, stopTTS]);
 
   const handleStart = async () => {
     const result = setupSchema.safeParse({
@@ -577,54 +566,6 @@ export default function InterviewPage() {
         {/* Center Panel: Main Interview */}
         <section className="flex-1 flex flex-col bg-surface-container-low overflow-y-auto relative p-6">
           <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center gap-6 pb-20">
-            {/* AI TTS Status Indicator */}
-            {activeQuestion && !done && (
-              <div className="flex items-center justify-center gap-3">
-                {ttsState === "LOADING" && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/20 rounded-full">
-                    <span className="material-symbols-outlined text-primary text-sm animate-spin">progress_activity</span>
-                    <span className="text-xs font-bold text-primary">Loading audio...</span>
-                  </div>
-                )}
-                {ttsState === "SPEAKING" && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-success-green/10 border border-success-green/20 rounded-full">
-                    <span className="flex gap-[3px] items-end h-4">
-                      {[0, 1, 2, 3].map((i) => (
-                        <span
-                          key={i}
-                          className="w-[3px] rounded-full bg-success-green animate-pulse"
-                          style={{
-                            height: `${8 + (i % 2) * 8}px`,
-                            animationDelay: `${i * 0.12}s`,
-                          }}
-                        />
-                      ))}
-                    </span>
-                    <span className="text-xs font-bold text-success-green">AI Speaking...</span>
-                  </div>
-                )}
-                {ttsState === "FINISHED" && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-tertiary-fixed/30 border border-outline-variant/20 rounded-full">
-                    <span className="material-symbols-outlined text-tertiary text-sm">check_circle</span>
-                    <span className="text-xs font-bold text-tertiary">Playback finished — your turn</span>
-                  </div>
-                )}
-                {ttsState === "ERROR" && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-error/5 border border-error-red/20 rounded-full">
-                    <span className="material-symbols-outlined text-error-red text-sm">error</span>
-                    <span className="text-xs font-bold text-error-red">
-                      {ttsError ?? "Audio failed"}
-                    </span>
-                    <button
-                      onClick={() => activeQuestion.ttsTranscript && speak(activeQuestion.ttsTranscript)}
-                      className="ml-1 text-[10px] font-bold text-primary underline cursor-pointer"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
             {/* Prompt Card */}
             {activeQuestion ? (
               <div className="bg-white rounded-xxl p-6 shadow-xl border border-outline-variant/30 relative">
@@ -744,13 +685,8 @@ export default function InterviewPage() {
                 
                 <button
                   onClick={handleNext}
-                  disabled={loading || ttsState === "LOADING" || ttsState === "SPEAKING"}
-                  title={ttsState !== "FINISHED" && ttsState !== "ERROR" && ttsState !== "IDLE" ? "Wait for AI to finish speaking" : undefined}
-                  className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                    ttsState === "FINISHED"
-                      ? "bg-primary text-white hover:bg-[#4338CA]"
-                      : "bg-primary/40 text-white cursor-not-allowed"
-                  }`}
+                  disabled={loading}
+                  className="flex-1 h-10 bg-primary text-white rounded-xl text-xs font-bold hover:bg-[#4338CA] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <span>Submit Answer</span>
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
