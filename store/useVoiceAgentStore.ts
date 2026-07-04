@@ -16,10 +16,10 @@ interface VoiceAgentState {
   /** Append a finalized turn. */
   appendTurn: (role: TurnRole, text: string) => void;
   /**
-   * Upsert the trailing live user transcript bubble. Replaces the current live
-   * user turn if present, otherwise appends one.
+   * Appends the latest transcript segment to the trailing live user turn.
+   * Starts a new user turn if the trailing turn is not a live user turn.
    */
-  setLiveUserTurn: (text: string) => void;
+  appendLiveUserTurn: (text: string) => void;
   /** Promote any trailing live user bubble to a finalized turn. */
   finalizeLiveUserTurn: () => void;
   reset: () => void;
@@ -45,12 +45,15 @@ export const useVoiceAgentStore = create<VoiceAgentState>((set) => ({
       turns: [...s.turns, { id: nextId(), role, text }],
     })),
 
-  setLiveUserTurn: (text) =>
+  appendLiveUserTurn: (text) =>
     set((s) => {
       const last = s.turns[s.turns.length - 1];
       if (last && last.role === "user" && last.live) {
         const updated = [...s.turns];
-        updated[updated.length - 1] = { ...last, text };
+        updated[updated.length - 1] = {
+          ...last,
+          text: last.text ? `${last.text} ${text}` : text,
+        };
         return { turns: updated };
       }
       return {

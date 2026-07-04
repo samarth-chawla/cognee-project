@@ -18,6 +18,18 @@ import { useVoiceAgentStore } from "@/store/useVoiceAgentStore";
 import { API } from "@/lib/utils/constants";
 import type { VoiceQuestion } from "@/services/voiceInterview.service";
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Logging helper — all voice agent logs go through this for easy filtering.
+// Open DevTools console and filter on [VoiceAgent] to trace the flow.
+// ──────────────────────────────────────────────────────────────────────────────
+const LOG_PREFIX = "[VoiceAgent]";
+function log(...args: unknown[]) {
+  console.log(LOG_PREFIX, ...args);
+}
+function warn(...args: unknown[]) {
+  console.warn(LOG_PREFIX, ...args);
+}
+
 interface VoiceInterviewInput {
   id: string;
   questions: { sequence: number; ttsTranscript?: string; prompt?: string }[];
@@ -63,6 +75,8 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   const finishedRef = useRef<boolean>(false);
   const turnStartRef = useRef<number>(0);
   const pendingFnIdRef = useRef<string | null>(null);
+  /** True once the user has spoken at least one word for the current question. */
+  const userHasSpokenRef = useRef<boolean>(false);
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -72,6 +86,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   }, []);
 
   const cleanup = useCallback(() => {
+    log("cleanup()");
     clearSilenceTimer();
     if (keepAliveRef.current) {
       clearInterval(keepAliveRef.current);
@@ -89,6 +104,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   }, [clearSilenceTimer]);
 
   const stop = useCallback(() => {
+    log("stop() called");
     finishedRef.current = true;
     cleanup();
   }, [cleanup]);
@@ -96,27 +112,42 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   useEffect(() => () => cleanup(), [cleanup]);
 
   /** Speak a question verbatim by injecting it as an agent message. */
-  const injectQuestion = useCallback((question: VoiceQuestion | VoiceInterviewInput["questions"][number]) => {
-    const text =
-      ("ttsTranscript" in question && question.ttsTranscript) ||
-      ("prompt" in question && (question as { prompt?: string }).prompt) ||
-      "";
-    if (!text) return;
-    currentSequenceRef.current = question.sequence;
-    answerBufferRef.current = "";
-    turnStartRef.current = Date.now();
-    connRef.current?.sendInjectAgentMessage({
-      type: "InjectAgentMessage",
-      message: text,
-      behavior: "queue",
-    });
-  }, []);
+  const injectQuestion = useCallback(
+    (question: VoiceQuestion | VoiceInterviewInput["questions"][number]) => {
+      const text =
+        ("ttsTranscript" in question && question.ttsTranscript) ||
+        ("prompt" in question && (question as { prompt?: string }).prompt) ||
+        "";
+      if (!text) {
+        warn("injectQuestion: no text for sequence", question.sequence);
+        return;
+      }
+      log(
+        "injectQuestion: seq =",
+        question.sequence,
+        "text =",
+        text.slice(0, 80) + "…"
+      );
+      currentSequenceRef.current = question.sequence;
+      answerBufferRef.current = "";
+      userHasSpokenRef.current = false;
+      turnStartRef.current = Date.now();
+      clearSilenceTimer();
+      connRef.current?.sendInjectAgentMessage({
+        type: "InjectAgentMessage",
+        message: text,
+        behavior: "queue",
+      });
+    },
+    [clearSilenceTimer]
+  );
 
   /** End the interview: run existing evaluation pipeline, then flag report ready. */
   const finishInterview = useCallback(async () => {
     if (finishedRef.current) return;
     finishedRef.current = true;
     clearSilenceTimer();
+    log("finishInterview: calling POST", API.interviewEnd);
     store.getState().setState("EVALUATING");
 
     try {
@@ -126,9 +157,11 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
         body: JSON.stringify({ interviewId: interviewIdRef.current }),
       });
       const json = await res.json();
+      log("finishInterview: response =", json);
       if (!json.success) throw new Error(json.error || "Evaluation failed");
       store.getState().setState("REPORT_READY");
     } catch (err) {
+      warn("finishInterview: error =", err);
       store
         .getState()
         .setError(err instanceof Error ? err.message : "Evaluation failed");
@@ -147,92 +180,149 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
    * Single funnel for answer-completion (function call OR silence fallback).
    * Guarded so the two triggers never double-advance.
    */
-  const advanceTurn = useCallback(async () => {
-    if (advancingRef.current || finishedRef.current) return;
-    const sequence = currentSequenceRef.current;
-    const transcript = answerBufferRef.current.trim();
-    // Nothing to save yet (agent hasn't asked / candidate hasn't spoken).
-    if (sequence <= 0) return;
-
-    advancingRef.current = true;
-    clearSilenceTimer();
-    store.getState().finalizeLiveUserTurn();
-    store.getState().setState("WAITING_FOR_BACKEND");
-
-    // Ack the function call if this advance came from one.
-    if (pendingFnIdRef.current) {
-      connRef.current?.sendFunctionCallResponse({
-        type: "FunctionCallResponse",
-        id: pendingFnIdRef.current,
-        name: COMPLETE_ANSWER_FUNCTION,
-        content: JSON.stringify({ status: "saved" }),
-      });
-      pendingFnIdRef.current = null;
-    }
-
-    try {
-      const durationSec = Math.max(
-        0,
-        Math.round((Date.now() - turnStartRef.current) / 1000)
+  const advanceTurn = useCallback(
+    async (trigger: "function_call" | "silence_fallback") => {
+      log(
+        `advanceTurn(${trigger}): advancing=${advancingRef.current}, finished=${finishedRef.current}, seq=${currentSequenceRef.current}, bufferLen=${answerBufferRef.current.trim().length}`
       );
-      const res = await fetch(API.interviewVoiceAnswer, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+
+      if (advancingRef.current || finishedRef.current) {
+        log("advanceTurn: BLOCKED (already advancing or finished)");
+        return;
+      }
+      const sequence = currentSequenceRef.current;
+      const transcript = answerBufferRef.current.trim();
+      // Nothing to save yet (agent hasn't asked / candidate hasn't spoken).
+      if (sequence <= 0) {
+        log("advanceTurn: BLOCKED (sequence <= 0)");
+        return;
+      }
+
+      advancingRef.current = true;
+      clearSilenceTimer();
+      store.getState().finalizeLiveUserTurn();
+      store.getState().setState("WAITING_FOR_BACKEND");
+
+      // Ack the function call if this advance came from one.
+      // The `content` feeds back into the LLM context — it MUST instruct the
+      // agent to stop generating speech and wait for the next injected question.
+      if (pendingFnIdRef.current) {
+        log("advanceTurn: sending FunctionCallResponse for id =", pendingFnIdRef.current);
+        connRef.current?.sendFunctionCallResponse({
+          type: "FunctionCallResponse",
+          id: pendingFnIdRef.current,
+          name: COMPLETE_ANSWER_FUNCTION,
+          content: JSON.stringify({
+            status: "received",
+            instruction:
+              "Answer saved. STOP TALKING NOW. Do not comment on the answer. Do not ask follow-up questions. Do not say anything at all. Wait in complete silence. The next interview question will be injected for you to speak shortly.",
+          }),
+        });
+        pendingFnIdRef.current = null;
+      }
+
+      try {
+        const durationSec = Math.max(
+          0,
+          Math.round((Date.now() - turnStartRef.current) / 1000)
+        );
+        const body = {
           interviewId: interviewIdRef.current,
           sequence,
           // Fall back to a placeholder so the backend Zod min(1) passes even if
           // the candidate stayed silent (silence-fallback path).
           transcript: transcript || "(no answer provided)",
           durationSec,
-        }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Failed to save answer");
+        };
+        log("advanceTurn: POST", API.interviewVoiceAnswer, body);
 
-      const { done, nextQuestion, index, totalQuestions } = json.data as {
-        done: boolean;
-        index: number;
-        totalQuestions: number;
-        nextQuestion: VoiceQuestion | null;
-      };
-
-      if (done || !nextQuestion) {
-        connRef.current?.sendInjectAgentMessage({
-          type: "InjectAgentMessage",
-          message: "Thank you. That concludes the interview.",
-          behavior: "queue",
+        const res = await fetch(API.interviewVoiceAnswer, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         });
-        store.getState().setState("FINISHED");
-        store.getState().setProgress(totalQuestions, totalQuestions);
-        // Give the closing line a moment to play, then evaluate.
-        setTimeout(() => void finishInterview(), 3500);
-      } else {
-        store.getState().setProgress(index + 1, totalQuestions);
-        injectQuestion(nextQuestion);
-        store.getState().setState("AI_SPEAKING");
+        const json = await res.json();
+        log("advanceTurn: response =", json);
+
+        if (!json.success) throw new Error(json.error || "Failed to save answer");
+
+        const { done, nextQuestion, index, totalQuestions } = json.data as {
+          done: boolean;
+          index: number;
+          totalQuestions: number;
+          nextQuestion: VoiceQuestion | null;
+        };
+
+        log(
+          "advanceTurn: done =",
+          done,
+          "nextQuestion =",
+          nextQuestion ? `seq ${nextQuestion.sequence}` : "null",
+          "index =",
+          index,
+          "total =",
+          totalQuestions
+        );
+
+        if (done || !nextQuestion) {
+          log("advanceTurn: INTERVIEW COMPLETE — injecting closing message");
+          connRef.current?.sendInjectAgentMessage({
+            type: "InjectAgentMessage",
+            message:
+              "Thank you for your time. That concludes today's interview. We will review your answers and prepare your evaluation report.",
+            behavior: "queue",
+          });
+          store.getState().setState("FINISHED");
+          store.getState().setProgress(totalQuestions, totalQuestions);
+          // Give the closing line a moment to play, then evaluate.
+          setTimeout(() => void finishInterview(), 5000);
+        } else {
+          log("advanceTurn: injecting next question seq =", nextQuestion.sequence);
+          store.getState().setProgress(index + 1, totalQuestions);
+          injectQuestion(nextQuestion);
+          store.getState().setState("AI_SPEAKING");
+        }
+      } catch (err) {
+        warn("advanceTurn: ERROR =", err);
+        store
+          .getState()
+          .setError(err instanceof Error ? err.message : "Failed to advance");
+      } finally {
+        advancingRef.current = false;
       }
-    } catch (err) {
-      store
-        .getState()
-        .setError(err instanceof Error ? err.message : "Failed to advance");
-    } finally {
-      advancingRef.current = false;
-    }
-  }, [clearSilenceTimer, finishInterview, injectQuestion, store]);
+    },
+    [clearSilenceTimer, finishInterview, injectQuestion, store]
+  );
 
   /** Arm the silence-fallback timer (reset on any new user speech). */
   const armSilenceTimer = useCallback(() => {
     clearSilenceTimer();
     silenceTimerRef.current = setTimeout(() => {
-      // Only fire if the agent is idle and the candidate actually said something.
+      log(
+        "silenceTimer fired: agentSpeaking =",
+        agentSpeakingRef.current,
+        "advancing =",
+        advancingRef.current,
+        "finished =",
+        finishedRef.current,
+        "bufferLen =",
+        answerBufferRef.current.trim().length,
+        "userHasSpoken =",
+        userHasSpokenRef.current
+      );
+      // Only fire if the agent is idle, not already advancing, the candidate
+      // actually spoke, and the user has spoken for THIS question.
       if (
         !agentSpeakingRef.current &&
         !advancingRef.current &&
         !finishedRef.current &&
+        userHasSpokenRef.current &&
         answerBufferRef.current.trim().length > 0
       ) {
-        void advanceTurn();
+        log("silenceTimer: triggering advanceTurn");
+        void advanceTurn("silence_fallback");
+      } else {
+        log("silenceTimer: conditions NOT met, ignoring");
       }
     }, SILENCE_TIMEOUT_MS);
   }, [advanceTurn, clearSilenceTimer]);
@@ -242,17 +332,22 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
     (msg: AgentServerMessage) => {
       switch (msg.type) {
         case "Welcome":
+          log("event: Welcome");
           store.getState().setState("READY");
           break;
 
         case "SettingsApplied": {
+          log("event: SettingsApplied");
           // Greeting plays automatically; kick off Q1 right after so the agent
           // speaks it once the welcome finishes (queued).
           store.getState().setState("GREETING");
           const first = questionsRef.current[0];
           if (first) {
+            log("SettingsApplied: injecting first question, total =", questionsRef.current.length);
             store.getState().setProgress(1, questionsRef.current.length);
             injectQuestion(first);
+          } else {
+            warn("SettingsApplied: NO questions available!");
           }
           break;
         }
@@ -261,19 +356,29 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           const role = msg.role === "user" ? "user" : "ai";
           const content = typeof msg.content === "string" ? msg.content : "";
           if (!content) break;
+
+          log(`event: ConversationText role=${role} content="${content.slice(0, 100)}"`);
+
           if (role === "user") {
+            // Accumulate user speech into the current answer buffer (for the backend).
             answerBufferRef.current = answerBufferRef.current
               ? `${answerBufferRef.current} ${content}`
               : content;
-            store.getState().setLiveUserTurn(answerBufferRef.current);
+            userHasSpokenRef.current = true;
+            // Append JUST the new text to the UI bubble.
+            store.getState().appendLiveUserTurn(content);
+            // Reset the silence timer — the user is still talking.
             armSilenceTimer();
           } else {
+            // AI text — display it but DON'T let the agent's own speech
+            // affect the silence timer or answer buffer.
             store.getState().appendTurn("ai", content);
           }
           break;
         }
 
         case "UserStartedSpeaking":
+          log("event: UserStartedSpeaking");
           // Barge-in: stop any agent audio immediately.
           playerRef.current?.clear();
           agentSpeakingRef.current = false;
@@ -284,25 +389,38 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           break;
 
         case "AgentThinking":
-          store.getState().setState("PROCESSING");
+          log("event: AgentThinking");
+          if (!advancingRef.current && !finishedRef.current) {
+            store.getState().setState("PROCESSING");
+          }
           break;
 
         case "AgentStartedSpeaking":
+          log("event: AgentStartedSpeaking");
           agentSpeakingRef.current = true;
           clearSilenceTimer();
-          store.getState().setState("AI_SPEAKING");
+          if (!advancingRef.current && !finishedRef.current) {
+            store.getState().setState("AI_SPEAKING");
+          }
           break;
 
         case "AgentAudioDone":
+          log("event: AgentAudioDone, userHasSpoken =", userHasSpokenRef.current);
           agentSpeakingRef.current = false;
           if (!advancingRef.current && !finishedRef.current) {
             store.getState().setState("USER_LISTENING");
-            // Candidate's turn — start watching for silence.
-            armSilenceTimer();
+            // ONLY arm the silence timer if the user has already spoken
+            // for this question. This prevents the timer from firing after
+            // the agent speaks the question (before the user answers).
+            if (userHasSpokenRef.current && answerBufferRef.current.trim().length > 0) {
+              log("AgentAudioDone: arming silence timer (user has spoken)");
+              armSilenceTimer();
+            }
           }
           break;
 
         case "FunctionCallRequest": {
+          log("event: FunctionCallRequest", msg.functions);
           const functions = Array.isArray(msg.functions)
             ? (msg.functions as { id: string; name: string }[])
             : [];
@@ -310,13 +428,21 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
             (f) => f.name === COMPLETE_ANSWER_FUNCTION
           );
           if (call) {
+            log("FunctionCallRequest: complete_answer called, id =", call.id);
             pendingFnIdRef.current = call.id;
-            void advanceTurn();
+            void advanceTurn("function_call");
+          } else {
+            warn("FunctionCallRequest: unknown function(s)", functions.map((f) => f.name));
           }
           break;
         }
 
+        case "Warning":
+          warn("event: Warning", msg);
+          break;
+
         case "Error":
+          warn("event: Error", msg);
           store
             .getState()
             .setError(
@@ -327,6 +453,10 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           break;
 
         default:
+          // Log unknown event types for debugging.
+          if (msg.type) {
+            log("event: (unhandled)", msg.type);
+          }
           break;
       }
     },
@@ -343,10 +473,18 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
       answerBufferRef.current = "";
       currentSequenceRef.current = 0;
       pendingFnIdRef.current = null;
+      userHasSpokenRef.current = false;
       interviewIdRef.current = interview.id;
       questionsRef.current = (interview.questions ?? [])
         .slice()
         .sort((a, b) => a.sequence - b.sequence);
+
+      log(
+        "start: interviewId =",
+        interview.id,
+        "questions =",
+        questionsRef.current.map((q) => ({ seq: q.sequence, has_tts: !!q.ttsTranscript }))
+      );
 
       if (questionsRef.current.length === 0) {
         return { ok: false, error: "No questions to conduct" };
@@ -357,15 +495,26 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
       // 1. Mint a short-lived access token.
       let token: string;
       try {
+        log("start: fetching voice token...");
         const res = await fetch(API.interviewVoiceToken);
         const json = await res.json();
+        
+        // React Strict Mode race condition: stop() might have been called while we were fetching the token.
+        // If so, abort setup immediately so we don't create a zombie connection.
+        if (finishedRef.current) {
+          log("start: aborted because stop() was called during token fetch");
+          return { ok: false, error: "Aborted" };
+        }
+
         if (!res.ok || !json.success || !json.data?.token) {
           throw new Error(json.message || "Could not obtain a Deepgram token");
         }
         token = json.data.token;
+        log("start: token obtained");
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Token request failed";
+        warn("start: token error =", message);
         store.getState().setError(message);
         return { ok: false, error: message };
       }
@@ -378,6 +527,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
         onMessage: handleMessage,
         onAudio: (chunk) => player.enqueue(chunk),
         onClose: () => {
+          log("WebSocket: onClose, finished =", finishedRef.current);
           // Unexpected close mid-interview surfaces as a lost connection; a
           // close after finish/stop is expected and ignored.
           if (!finishedRef.current && store.getState().state !== "REPORT_READY") {
@@ -385,6 +535,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           }
         },
         onError: () => {
+          warn("WebSocket: onError");
           if (!finishedRef.current) {
             store.getState().setError("Voice connection lost");
           }
@@ -393,16 +544,20 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
       connRef.current = conn;
 
       try {
+        log("start: connecting WebSocket...");
         await conn.connect(token);
+        log("start: WebSocket connected");
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Connection failed";
+        warn("start: WebSocket error =", message);
         store.getState().setError(message);
         cleanup();
         return { ok: false, error: message };
       }
 
       // 3. Settings must be the first frame after open.
+      log("start: sending Settings");
       conn.sendSettings(buildInterviewAgentSettings());
 
       // 4. Keepalive to preserve the long session.
@@ -412,12 +567,14 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
 
       // 5. Start streaming the mic.
       try {
+        log("start: requesting microphone...");
         const mic = new MicRecorder({
           targetSampleRate: AGENT_INPUT_SAMPLE_RATE,
           onChunk: (chunk) => conn.sendMedia(chunk),
         });
         micRef.current = mic;
         await mic.start();
+        log("start: microphone active");
       } catch (err) {
         const name = err instanceof DOMException ? err.name : "";
         const message =
@@ -426,6 +583,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
             : name === "NotFoundError"
               ? "No microphone found"
               : "Could not access the microphone";
+        warn("start: mic error =", message);
         store.getState().setError(message);
         cleanup();
         return { ok: false, error: message };

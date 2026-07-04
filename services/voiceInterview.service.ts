@@ -109,8 +109,11 @@ export async function getInterviewQuestions(
 export async function saveAnswerAndAdvance(
   input: SaveAnswerAndAdvanceInput
 ): Promise<AdvanceTurnResult> {
+  console.log(`[VoiceService] saveAnswerAndAdvance called for interview=${input.interviewId}, sequence=${input.sequence}`);
+  
   const questions = await getInterviewQuestions(input.interviewId, input.userId);
   const totalQuestions = questions.length;
+  console.log(`[VoiceService] Found ${totalQuestions} questions for interview. Input sequence: ${input.sequence}`);
 
   await saveInterviewAnswer({
     interviewId: input.interviewId,
@@ -124,6 +127,8 @@ export async function saveAnswerAndAdvance(
   // Next question is the one whose sequence directly follows the answered one.
   const nextQuestion =
     questions.find((q) => q.sequence > input.sequence) ?? null;
+
+  console.log(`[VoiceService] Next question selected: ${nextQuestion ? `sequence ${nextQuestion.sequence}` : 'null (Done)'}`);
 
   const nextIndex = nextQuestion
     ? questions.findIndex((q) => q.sequence === nextQuestion.sequence)
