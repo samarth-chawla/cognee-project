@@ -8,6 +8,8 @@ export interface InterviewQuestion {
   sequence: number;
   type: QuestionType;
   prompt: string;
+  /** Natural-speech version for TTS — use this, never prompt/displayQuestion */
+  ttsTranscript?: string;
   expectedPoints?: string[];
   difficulty?: "easy" | "medium" | "hard";
 }

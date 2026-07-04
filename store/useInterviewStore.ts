@@ -31,6 +31,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   reset: () => set({ current: null, currentIndex: 0, isRecording: false }),
   currentQuestion: () => {
     const s = get();
-    return s.current?.questions[s.currentIndex] ?? null;
+    return s.current?.questions?.[s.currentIndex] ?? null;
+
   },
 }));

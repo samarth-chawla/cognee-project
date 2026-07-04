@@ -17,6 +17,8 @@ export const API = {
   interviewAnswer: "/api/interview/answer",
   interviewNext: "/api/interview/next",
   interviewEnd: "/api/interview/end",
+  interviewCancel: "/api/interview/cancel",
+
   evaluation: "/api/reports/generate",
   speech: "/api/speech/transcribe",
   memory: "/api/memory/timeline",

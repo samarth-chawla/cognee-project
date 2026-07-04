@@ -13,14 +13,33 @@ export function useInterview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Cancel current interview: marks DB row ABORTED then clears local state. */
+  const cancel = useCallback(async () => {
+    const interviewId = useInterviewStore.getState().current?.id;
+    reset(); // clear UI immediately — don't await
+    if (interviewId) {
+      try {
+        await fetch(API.interviewCancel, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ interviewId }),
+        });
+      } catch {
+        // best-effort — start will abort stale rows anyway
+      }
+    }
+  }, [reset]);
+
   const mapGeneratedQuestion = (question: any, index: number) => ({
     id: question.id || `generated-${index + 1}`,
     sequence: question.sequence ?? index + 1,
     type: question.type || question.category?.toLowerCase?.() || "technical",
     prompt: question.prompt || question.displayQuestion || "",
+    ttsTranscript: question.ttsTranscript || question.prompt || question.displayQuestion || "",
     expectedPoints: question.expectedDiscussion ? [question.expectedDiscussion] : [],
     difficulty: question.difficulty?.toLowerCase?.() || "medium",
   });
+
 
   const start = useCallback(async (payload?: any) => {
     setLoading(true);
@@ -118,5 +137,6 @@ export function useInterview() {
     }
   }, [current]);
 
-  return { current, loading, error, start, submitAnswer, finish, reset };
+  return { current, loading, error, start, submitAnswer, finish, reset, cancel };
+
 }

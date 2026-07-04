@@ -148,6 +148,8 @@ export async function createInterviewSession(params: CreateInterviewParams) {
     throw new Error("RESUME_NOT_FOUND");
   }
 
+  // Abort any stale interview (READY, ONGOING, GENERATING, FAILED) so we always
+  // create a clean new session. The old row is tombstoned as ABORTED.
   const latestInterview = forceNew
     ? null
     : await prisma.interview.findFirst({
@@ -156,134 +158,60 @@ export async function createInterviewSession(params: CreateInterviewParams) {
         select: { id: true, status: true },
       });
 
-  if (latestInterview?.status === "ONGOING") {
-    return latestInterview;
+  if (
+    latestInterview &&
+    ["READY", "ONGOING", "GENERATING", "FAILED"].includes(latestInterview.status)
+  ) {
+    await prisma.interview.update({
+      where: { id: latestInterview.id },
+      data: { status: "CANCELLED", endedAt: new Date() },
+    });
   }
 
-  const reusableInterview =
-    latestInterview &&
-    ["GENERATING", "FAILED"].includes(latestInterview.status)
-      ? latestInterview
-      : null;
+
+
 
   return prisma.$transaction(async (tx) => {
-    const existingInterview = reusableInterview
-      ? await tx.interview.findUnique({
-          where: { id: reusableInterview.id },
-          select: {
-            company: true,
-            companyType: true,
-            customCompanyName: true,
-            role: true,
-            interviewType: true,
-            difficulty: true,
-            jobDescriptionId: true,
-          },
-        })
-      : null;
-
-    const effectiveCompany = company ?? existingInterview?.company;
-    const effectiveRole = role ?? existingInterview?.role;
-    const effectiveInterviewType = interviewType ?? existingInterview?.interviewType;
-    const effectiveDifficulty = difficulty ?? existingInterview?.difficulty;
-
-    let jobDescriptionId: string | undefined = existingInterview?.jobDescriptionId ?? undefined;
+    let jobDescriptionId: string | undefined;
 
     if (jobDescription) {
       const companyName =
-        effectiveCompany === "Other" && customCompanyName?.trim()
+        company === "Other" && customCompanyName?.trim()
           ? customCompanyName.trim()
-          : effectiveCompany ?? "";
+          : company ?? "";
 
-      if (reusableInterview && existingInterview?.jobDescriptionId) {
-        const updatedJd = await tx.jobDescription.update({
-          where: { id: existingInterview.jobDescriptionId },
-          data: {
-            company: companyName,
-            title: effectiveRole ?? "",
-            rawText: jobDescription,
-          },
-        });
-        jobDescriptionId = updatedJd.id;
-      } else {
-        const createdJd = await tx.jobDescription.create({
-          data: {
-            userId,
-            company: companyName,
-            title: effectiveRole ?? "",
-            rawText: jobDescription,
-            parsedSkills: [],
-          },
-        });
-        jobDescriptionId = createdJd.id;
-      }
+      const createdJd = await tx.jobDescription.create({
+        data: {
+          userId,
+          company: companyName,
+          title: role ?? "",
+          rawText: jobDescription,
+          parsedSkills: [],
+        },
+      });
+      jobDescriptionId = createdJd.id;
     }
 
-    if (!effectiveRole || !effectiveInterviewType || !effectiveDifficulty || !effectiveCompany) {
+    if (!role || !interviewType || !difficulty || !company) {
       throw new Error("INTERVIEW_CONFIG_INCOMPLETE");
     }
 
-    const requiredRole = effectiveRole;
-    const requiredInterviewType = effectiveInterviewType;
-    const requiredDifficulty = effectiveDifficulty;
-    const requiredCompany = effectiveCompany;
-
-    const interviewPayload = {
-      resumeId: latestResume.id,
-      ...(jobDescriptionId ? { jobDescriptionId } : {}),
-      ...(requiredCompany !== undefined
-        ? {
-            company: requiredCompany === "Other" ? "Other" : requiredCompany,
-            companyType:
-              requiredCompany === "Other"
-                ? customCompanyName?.trim() === ""
-                  ? existingInterview?.companyType ?? null
-                  : companyType?.trim() || existingInterview?.companyType || null
-                : null,
-            customCompanyName:
-              requiredCompany === "Other"
-                ? customCompanyName?.trim() ||
-                  existingInterview?.customCompanyName ||
-                  null
-                : null,
-          }
-        : {}),
-      ...(requiredRole !== undefined ? { role: requiredRole } : {}),
-      ...(requiredInterviewType !== undefined
-        ? { interviewType: requiredInterviewType }
-        : {}),
-      ...(requiredDifficulty !== undefined
-        ? { difficulty: requiredDifficulty }
-        : {}),
-      status: "GENERATING" as const,
-    };
-
-    if (reusableInterview) {
-      return tx.interview.update({
-        where: { id: reusableInterview.id },
-        data: interviewPayload,
-      });
-    }
-
+    // Always create a fresh interview — stale ones were aborted above.
     return tx.interview.create({
       data: {
         userId,
         resumeId: latestResume.id,
         ...(jobDescriptionId ? { jobDescriptionId } : {}),
-        company: requiredCompany === "Other" ? "Other" : requiredCompany,
-        companyType:
-          requiredCompany === "Other"
-            ? companyType?.trim() || null
-            : null,
+        company: company === "Other" ? "Other" : company,
+        companyType: company === "Other" ? companyType?.trim() || null : null,
         customCompanyName:
-          requiredCompany === "Other"
-            ? customCompanyName?.trim() || null
-            : null,
-        role: requiredRole,
-        interviewType: requiredInterviewType,
-        difficulty: requiredDifficulty,
+          company === "Other" ? customCompanyName?.trim() || null : null,
+        role,
+        interviewType,
+        difficulty,
         status: "GENERATING",
       },
     });
   });
 }
+
