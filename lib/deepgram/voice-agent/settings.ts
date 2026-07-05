@@ -38,11 +38,30 @@ export const SILENCE_STAGE1_MS = 4000;
 export const SILENCE_STAGE2_MS = 3500;
 
 /**
+ * FALLBACK-only silence window while the candidate is answering (USER_ANSWERING).
+ * Primary answer-completion is the Voice Agent LLM calling complete_answer; this
+ * timer only fires if the LLM stalls. Measured from when the candidate LAST
+ * spoke — any new speech resets it — so mid-answer thinking pauses never trigger
+ * it. Kept in the 5–8s band a real interviewer waits before assuming you're done.
+ */
+export const SILENCE_FALLBACK_MS = 6000;
+
+/**
  * Fast path: when the candidate explicitly signals they are finished ("next
  * question", "that's my answer", "I'm done"), we only wait this short beat — just
  * long enough to be sure they are not mid-sentence — then advance.
  */
 export const EXPLICIT_DONE_MS = 1500;
+
+/**
+ * How long we wait, after asking a question, for the candidate to START
+ * answering. This is the WAITING_FOR_FIRST_RESPONSE window: a generous, quiet
+ * beat that lets the candidate think before speaking. We do NOT repeat the
+ * question during (or at the end of) this window — the timer exists only to
+ * detect that the candidate never started. The moment any speech is detected
+ * the timer is cancelled and we move to the answering state.
+ */
+export const WAITING_FIRST_RESPONSE_MS = 25000;
 
 /**
  * How long we wait, after asking a question, for the candidate to START

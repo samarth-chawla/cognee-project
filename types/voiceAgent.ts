@@ -9,6 +9,13 @@ export type ConversationState =
   | "READY"
   | "GREETING"
   | "AI_SPEAKING"
+  // Question asked; waiting (20–30s) for the candidate to START speaking. No
+  // auto-repeat happens in this state — we simply wait quietly.
+  | "WAITING_FOR_FIRST_RESPONSE"
+  // Candidate is actively answering. Natural pauses are allowed; we never
+  // interrupt. Completion is decided by the LLM (complete_answer) with a
+  // silence-timeout fallback.
+  | "USER_ANSWERING"
   | "USER_LISTENING"
   | "PROCESSING"
   | "WAITING_FOR_BACKEND"

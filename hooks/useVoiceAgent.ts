@@ -10,13 +10,10 @@ import {
   AGENT_INPUT_SAMPLE_RATE,
   AGENT_KEEPALIVE_MS,
   AGENT_OUTPUT_SAMPLE_RATE,
-  AWAIT_ANSWER_MS,
   COMPLETE_ANSWER_FUNCTION,
   EXPLICIT_DONE_MS,
-  MAX_AUTO_REASKS,
-  REASK_GRACE_MS,
-  SILENCE_STAGE1_MS,
-  SILENCE_STAGE2_MS,
+  SILENCE_FALLBACK_MS,
+  WAITING_FIRST_RESPONSE_MS,
   buildInterviewAgentSettings,
 } from "@/lib/deepgram/voice-agent/settings";
 import { useVoiceAgentStore } from "@/store/useVoiceAgentStore";
@@ -54,7 +51,20 @@ function normalize(text: string): string {
 function isClarificationRequest(text: string): boolean {
   const t = normalize(text);
   if (!t || t.split(" ").length > 9) return false;
-  return /(repeat|rephrase|say that again|say again|come again|didnt (hear|catch|get)|can you explain|could you explain|what do you mean|not sure what you mean|pardon|clarify)/.test(
+  return /(repeat|rephrase|say that again|say again|come again|didnt (hear|catch|get)|can you explain|could you explain|what do you mean|not sure what you mean|dont understand|dont get it|pardon|clarify)/.test(
+    t
+  );
+}
+
+/**
+ * Sub-intent of a clarification: does the candidate want the question EXPLAINED
+ * (rephrased) rather than simply REPEATED? Drives the spoken lead-in. Either way
+ * we re-speak the same Gemini question — we have no separate paraphrase source —
+ * but the lead-in acknowledges what they actually asked for.
+ */
+function isExplainRequest(text: string): boolean {
+  const t = normalize(text);
+  return /(explain|what do you mean|not sure what you mean|dont understand|dont get it|clarify|rephrase)/.test(
     t
   );
 }
@@ -402,54 +412,48 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   }, []);
 
   /**
-   * Schedule an advance to the next question after the candidate goes silent.
-   *
-   * Two-stage by default: a first grace period (they may just be thinking),
-   * then a final beat before moving on — like a human interviewer waiting for
-   * you to finish. ANY new user speech clears this and re-schedules from the
-   * start (see the ConversationText handler), so an in-progress answer is never
-   * cut off. `twoStage=false` is the short confirm used when the candidate
-   * explicitly says they are done.
+   * FALLBACK completion path (USER_ANSWERING). Primary completion is the Voice
+   * Agent LLM calling complete_answer (see FunctionCallRequest). This silence
+   * timer only rescues a stalled LLM: it fires `delayMs` (5–8s) AFTER the
+   * candidate last spoke and advances then. ANY new user speech clears and
+   * re-schedules it from the start (see the ConversationText handler), so
+   * natural mid-answer thinking pauses never cut the candidate off — the clock
+   * only runs once they have truly stopped talking.
    */
-  const scheduleAdvance = useCallback(
-    (firstDelayMs: number, twoStage: boolean) => {
+  const scheduleSilenceFallback = useCallback(
+    (delayMs: number) => {
       clearSilenceTimer();
       silenceTimerRef.current = setTimeout(() => {
         if (!canAdvanceNow()) {
-          log("scheduleAdvance: stage-1 fired but cannot advance yet");
+          log("scheduleSilenceFallback: fired but cannot advance yet");
           return;
         }
-        if (!twoStage) {
-          log("scheduleAdvance: advancing (explicit done / hint)");
-          void advanceTurn("silence_fallback");
-          return;
-        }
-        // Final grace — hold one more beat in case they resume speaking.
-        log("scheduleAdvance: entering final grace window");
-        silenceTimerRef.current = setTimeout(() => {
-          if (!canAdvanceNow()) {
-            log("scheduleAdvance: stage-2 fired but cannot advance yet");
-            return;
-          }
-          log("scheduleAdvance: advancing after full silence window");
-          void advanceTurn("silence_fallback");
-        }, SILENCE_STAGE2_MS);
-      }, firstDelayMs);
+        log(`scheduleSilenceFallback: ${delayMs}ms of silence — advancing (fallback)`);
+        void advanceTurn("silence_fallback");
+      }, delayMs);
     },
     [advanceTurn, canAdvanceNow, clearSilenceTimer]
   );
 
   /**
-   * Schedule what happens when the candidate has NOT started answering the
-   * current question. This is the "real interviewer" waiting behavior: give
-   * them a generous beat, then re-ask the question ONCE, then (after another
-   * beat) move on. Any speech from the candidate cancels this (see the
-   * ConversationText / UserStartedSpeaking handlers).
+   * WAITING_FOR_FIRST_RESPONSE: after a question finishes playing and the
+   * candidate has NOT started speaking, wait quietly for a generous window
+   * (WAITING_FIRST_RESPONSE_MS, ~20–30s) so they have time to gather their
+   * thoughts. During this window we do NOT repeat the question, do NOT
+   * interrupt, and do NOT advance — we simply listen. The timer exists ONLY to
+   * detect that the candidate never started; any speech cancels it immediately
+   * (see the ConversationText / UserStartedSpeaking handlers) and we move to the
+   * answering state. If the whole window elapses with total silence we move on
+   * to the next question WITHOUT ever repeating this one.
    */
-  const scheduleAwaitAnswer = useCallback(() => {
+  const scheduleFirstResponseWait = useCallback(() => {
     clearAwaitTimer();
-    const delay = reaskCountRef.current === 0 ? AWAIT_ANSWER_MS : REASK_GRACE_MS;
-    log(`scheduleAwaitAnswer: waiting ${delay}ms (reasks so far = ${reaskCountRef.current})`);
+    log(
+      `scheduleFirstResponseWait: WAITING_FOR_FIRST_RESPONSE, quietly waiting ${WAITING_FIRST_RESPONSE_MS}ms for the candidate to start`
+    );
+    if (!advancingRef.current && !finishedRef.current) {
+      store.getState().setState("WAITING_FOR_FIRST_RESPONSE");
+    }
     awaitTimerRef.current = setTimeout(() => {
       // Bail if things moved on while we waited, or the candidate started.
       if (
@@ -458,20 +462,15 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
         finishedRef.current ||
         userHasSpokenRef.current
       ) {
-        log("scheduleAwaitAnswer: fired but no longer applicable, ignoring");
+        log("scheduleFirstResponseWait: fired but no longer applicable, ignoring");
         return;
       }
-      if (reaskCountRef.current < MAX_AUTO_REASKS) {
-        reaskCountRef.current += 1;
-        log(`scheduleAwaitAnswer: no answer yet — re-asking (attempt ${reaskCountRef.current})`);
-        store.getState().setState("AI_SPEAKING");
-        reinjectCurrentQuestion("Take your time. Let me repeat the question.");
-      } else {
-        log("scheduleAwaitAnswer: still no answer after re-ask — moving on");
-        void advanceTurn("silence_fallback");
-      }
-    }, delay);
-  }, [advanceTurn, clearAwaitTimer, reinjectCurrentQuestion, store]);
+      // Candidate never started. Never repeat the question — move on so the
+      // interview keeps flowing.
+      log("scheduleFirstResponseWait: no response in window — moving on (no repeat)");
+      void advanceTurn("silence_fallback");
+    }, WAITING_FIRST_RESPONSE_MS);
+  }, [advanceTurn, clearAwaitTimer, store]);
 
   /** Handle one JSON control frame from the agent. */
   const handleMessage = useCallback(
@@ -508,36 +507,57 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           if (role === "user") {
             const trimmed = content.trim();
 
-            // Clarification / repeat request — NOT an answer. The agent stays
-            // silent now, so WE re-speak the current question ourselves and keep
-            // waiting. Don't count it toward the answer and don't advance.
+            // Clarification / repeat request — NOT an answer. Do NOT save it,
+            // do NOT advance, do NOT call complete_answer. We re-speak the
+            // current question (or acknowledge an explain request), then fall
+            // straight back into WAITING_FOR_FIRST_RESPONSE via AgentAudioDone.
             if (isClarificationRequest(trimmed)) {
-              log("ConversationText: clarification request — re-asking current question");
-              store.getState().appendLiveUserTurn(content);
+              const explain = isExplainRequest(trimmed);
+              log(
+                `ConversationText: clarification (${explain ? "explain" : "repeat"}) — re-asking current question, no advance`
+              );
+              // Finalize as its own separate turn so it never merges into (or is
+              // mistaken for) the candidate's actual answer bubble/buffer.
+              store.getState().finalizeLiveUserTurn();
+              store.getState().appendTurn("user", content);
+              // Cancel all pending timers and clear any pending function-call ack
+              // so a queued complete_answer can never fire off this request.
               clearTurnTimers();
+              pendingFnIdRef.current = null;
               store.getState().setState("AI_SPEAKING");
-              reinjectCurrentQuestion("Of course.");
+              // reinjectCurrentQuestion resets the answer buffer + userHasSpoken,
+              // guaranteeing no transcript is saved and no advance is triggered.
+              reinjectCurrentQuestion(
+                explain
+                  ? "Sure, let me put the question another way."
+                  : "Of course, let me repeat the question."
+              );
               break;
             }
 
-            // Real answer speech — the candidate has started, so cancel the
-            // "waiting for you to start" timer and accumulate into the buffer.
+            // Real answer speech — the candidate is ANSWERING. Cancel the
+            // "waiting for you to start" timer, accumulate into the buffer, and
+            // enter USER_ANSWERING. We never interrupt here.
             clearAwaitTimer();
             answerBufferRef.current = answerBufferRef.current
               ? `${answerBufferRef.current} ${content}`
               : content;
             userHasSpokenRef.current = true;
+            if (!advancingRef.current && !finishedRef.current) {
+              store.getState().setState("USER_ANSWERING");
+            }
             // Append JUST the new text to the UI bubble.
             store.getState().appendLiveUserTurn(content);
 
-            // (Re)schedule the advance. Any new speech restarts the window, so a
-            // pause mid-answer can never cut the candidate off.
+            // Completion is decided primarily by the LLM's complete_answer call.
+            // The silence timer below is only a FALLBACK — any new speech resets
+            // it, so a mid-answer thinking pause can never cut the candidate off.
             if (isExplicitDone(trimmed)) {
               // They said they're finished — short confirm, then move on.
-              scheduleAdvance(EXPLICIT_DONE_MS, false);
+              scheduleSilenceFallback(EXPLICIT_DONE_MS);
             } else {
-              // Normal pause — wait through the full two-stage grace window.
-              scheduleAdvance(SILENCE_STAGE1_MS, true);
+              // Measure the 5–8s fallback window from this last utterance.
+              scheduleSilenceFallback(SILENCE_FALLBACK_MS);
             }
           } else {
             // AI text — display it but DON'T let the agent's own speech
@@ -552,11 +572,12 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           // Barge-in: stop any agent audio immediately.
           playerRef.current?.clear();
           agentSpeakingRef.current = false;
-          // They're talking — cancel both the "waiting to start" and the
-          // end-of-answer timers; the ConversationText handler re-arms as needed.
+          // The candidate has started — cancel EVERY waiting/fallback timer and
+          // enter USER_ANSWERING. The ConversationText handler re-arms the
+          // silence fallback once we have transcript text.
           clearTurnTimers();
           if (!advancingRef.current && !finishedRef.current) {
-            store.getState().setState("USER_LISTENING");
+            store.getState().setState("USER_ANSWERING");
           }
           break;
 
@@ -580,17 +601,17 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           log("event: AgentAudioDone, userHasSpoken =", userHasSpokenRef.current);
           agentSpeakingRef.current = false;
           if (!advancingRef.current && !finishedRef.current) {
-            store.getState().setState("USER_LISTENING");
             if (userHasSpokenRef.current && answerBufferRef.current.trim().length > 0) {
               // Candidate answered while the agent was still finishing — resume
-              // the end-of-answer grace window.
-              log("AgentAudioDone: scheduling advance (user has spoken)");
-              scheduleAdvance(SILENCE_STAGE1_MS, true);
+              // USER_ANSWERING and re-arm the silence fallback.
+              store.getState().setState("USER_ANSWERING");
+              log("AgentAudioDone: re-arming silence fallback (user has spoken)");
+              scheduleSilenceFallback(SILENCE_FALLBACK_MS);
             } else {
-              // Question just finished playing and the candidate hasn't spoken.
-              // Wait patiently, then re-ask, then move on.
-              log("AgentAudioDone: awaiting first answer");
-              scheduleAwaitAnswer();
+              // Question just finished playing and the candidate hasn't started.
+              // Enter WAITING_FOR_FIRST_RESPONSE: wait quietly, never repeat.
+              log("AgentAudioDone: waiting for first response (no repeat)");
+              scheduleFirstResponseWait();
             }
           }
           break;
@@ -604,28 +625,33 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
             (f) => f.name === COMPLETE_ANSWER_FUNCTION
           );
           if (call) {
-            log("FunctionCallRequest: complete_answer (treated as a HINT, not a command)");
-            // Non-authoritative: the agent thinks the candidate is done, but the
-            // CLIENT decides when to advance. Ack immediately so the agent stays
-            // silent, then let the silence window confirm — this stops an
-            // over-eager LLM from cutting the candidate off mid-answer.
-            connRef.current?.sendFunctionCallResponse({
-              type: "FunctionCallResponse",
-              id: call.id,
-              name: COMPLETE_ANSWER_FUNCTION,
-              content: JSON.stringify({
-                status: "received",
-                instruction:
-                  "Noted. STOP TALKING NOW. Do not comment on the answer, do not ask anything. Wait in silence for the next injected question.",
-              }),
-            });
-            pendingFnIdRef.current = null;
-            // Only start the grace window if the candidate has actually spoken.
+            // PRIMARY completion signal. The LLM has determined the candidate
+            // finished their answer, so advance now — but only if they actually
+            // spoke (guards against a spurious call during a thinking pause,
+            // which must NEVER complete the answer). advanceTurn sends the
+            // FunctionCallResponse ack itself via pendingFnIdRef.
             if (
               userHasSpokenRef.current &&
               answerBufferRef.current.trim().length > 0
             ) {
-              scheduleAdvance(SILENCE_STAGE1_MS, true);
+              log("FunctionCallRequest: complete_answer — advancing (authoritative)");
+              pendingFnIdRef.current = call.id;
+              void advanceTurn("function_call");
+            } else {
+              // No answer captured yet → this is not a real completion. Ack to
+              // keep the agent silent and keep waiting; do NOT advance.
+              log("FunctionCallRequest: complete_answer ignored (no answer captured yet)");
+              connRef.current?.sendFunctionCallResponse({
+                type: "FunctionCallResponse",
+                id: call.id,
+                name: COMPLETE_ANSWER_FUNCTION,
+                content: JSON.stringify({
+                  status: "ignored",
+                  instruction:
+                    "The candidate has not answered yet. STOP TALKING NOW. Do not say anything. Wait in silence for them to answer.",
+                }),
+              });
+              pendingFnIdRef.current = null;
             }
           } else {
             warn("FunctionCallRequest: unknown function(s)", functions.map((f) => f.name));
@@ -656,7 +682,17 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           break;
       }
     },
-    [clearSilenceTimer, injectQuestion, scheduleAdvance, store]
+    [
+      advanceTurn,
+      clearSilenceTimer,
+      clearAwaitTimer,
+      clearTurnTimers,
+      injectQuestion,
+      reinjectCurrentQuestion,
+      scheduleSilenceFallback,
+      scheduleFirstResponseWait,
+      store,
+    ]
   );
 
   const start = useCallback(

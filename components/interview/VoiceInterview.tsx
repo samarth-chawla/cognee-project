@@ -33,6 +33,16 @@ const STATE_META: Record<
   },
   GREETING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
   AI_SPEAKING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
+  WAITING_FOR_FIRST_RESPONSE: {
+    label: "Listening",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
+  USER_ANSWERING: {
+    label: "Listening",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
   USER_LISTENING: {
     label: "Listening",
     tone: "text-success-green",
@@ -84,7 +94,10 @@ export default function VoiceInterview({
 
   const meta = STATE_META[state] ?? STATE_META.IDLE;
   const isSpeaking = state === "AI_SPEAKING" || state === "GREETING";
-  const isListening = state === "USER_LISTENING";
+  const isListening =
+    state === "USER_LISTENING" ||
+    state === "USER_ANSWERING" ||
+    state === "WAITING_FOR_FIRST_RESPONSE";
 
   // Kick off the single voice session once on mount.
   useEffect(() => {
