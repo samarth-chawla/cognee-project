@@ -7,6 +7,7 @@ import {
 } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import { UserSync } from "@/components/auth/UserSync";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <ClerkProvider>
           <UserSync />
           {children}
+          <Analytics />
         </ClerkProvider>
       </body>
     </html>
