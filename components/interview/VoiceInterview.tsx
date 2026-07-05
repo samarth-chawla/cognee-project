@@ -32,8 +32,13 @@ const STATE_META: Record<
     orb: "bg-success-green",
   },
   GREETING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
-  AI_SPEAKING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
+  ASKING_QUESTION: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
   WAITING_FOR_FIRST_RESPONSE: {
+    label: "Listening",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
+  USER_STARTED_SPEAKING: {
     label: "Listening",
     tone: "text-success-green",
     orb: "bg-success-green",
@@ -43,18 +48,16 @@ const STATE_META: Record<
     tone: "text-success-green",
     orb: "bg-success-green",
   },
-  USER_LISTENING: {
-    label: "Listening",
-    tone: "text-success-green",
-    orb: "bg-success-green",
-  },
-  PROCESSING: { label: "Thinking", tone: "text-tertiary", orb: "bg-tertiary" },
-  WAITING_FOR_BACKEND: {
+  ANSWER_COMPLETE: {
     label: "Thinking",
     tone: "text-tertiary",
     orb: "bg-tertiary",
   },
-  FINISHED: { label: "Wrapping up", tone: "text-primary", orb: "bg-primary" },
+  SAVE_TRANSCRIPT: { label: "Saving", tone: "text-tertiary", orb: "bg-tertiary" },
+  ACKNOWLEDGE_RESPONSE: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
+  ASK_NEXT_QUESTION: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
+  FINAL_QUESTION: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
+  THANK_CANDIDATE: { label: "Wrapping up", tone: "text-primary", orb: "bg-primary" },
   EVALUATING: {
     label: "Evaluating…",
     tone: "text-tertiary",
@@ -93,9 +96,15 @@ export default function VoiceInterview({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const meta = STATE_META[state] ?? STATE_META.IDLE;
-  const isSpeaking = state === "AI_SPEAKING" || state === "GREETING";
+  const isSpeaking =
+    state === "GREETING" ||
+    state === "ASKING_QUESTION" ||
+    state === "ACKNOWLEDGE_RESPONSE" ||
+    state === "ASK_NEXT_QUESTION" ||
+    state === "FINAL_QUESTION" ||
+    state === "THANK_CANDIDATE";
   const isListening =
-    state === "USER_LISTENING" ||
+    state === "USER_STARTED_SPEAKING" ||
     state === "USER_ANSWERING" ||
     state === "WAITING_FOR_FIRST_RESPONSE";
 
@@ -281,8 +290,8 @@ export default function VoiceInterview({
                   ? "mic_off"
                   : isSpeaking
                     ? "graphic_eq"
-                    : state === "PROCESSING" ||
-                        state === "WAITING_FOR_BACKEND" ||
+                    : state === "ANSWER_COMPLETE" ||
+                        state === "SAVE_TRANSCRIPT" ||
                         state === "EVALUATING"
                       ? "more_horiz"
                       : "mic"}
