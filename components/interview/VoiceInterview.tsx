@@ -21,16 +21,40 @@ const STATE_META: Record<
   { label: string; tone: string; orb: string }
 > = {
   IDLE: { label: "Idle", tone: "text-on-surface-variant", orb: "bg-outline" },
-  CONNECTING: { label: "Connecting…", tone: "text-tertiary", orb: "bg-tertiary" },
-  READY: { label: "Connected", tone: "text-success-green", orb: "bg-success-green" },
+  CONNECTING: {
+    label: "Connecting…",
+    tone: "text-tertiary",
+    orb: "bg-tertiary",
+  },
+  READY: {
+    label: "Connected",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
   GREETING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
   AI_SPEAKING: { label: "Speaking", tone: "text-primary", orb: "bg-primary" },
-  USER_LISTENING: { label: "Listening", tone: "text-success-green", orb: "bg-success-green" },
+  USER_LISTENING: {
+    label: "Listening",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
   PROCESSING: { label: "Thinking", tone: "text-tertiary", orb: "bg-tertiary" },
-  WAITING_FOR_BACKEND: { label: "Thinking", tone: "text-tertiary", orb: "bg-tertiary" },
+  WAITING_FOR_BACKEND: {
+    label: "Thinking",
+    tone: "text-tertiary",
+    orb: "bg-tertiary",
+  },
   FINISHED: { label: "Wrapping up", tone: "text-primary", orb: "bg-primary" },
-  EVALUATING: { label: "Evaluating…", tone: "text-tertiary", orb: "bg-tertiary" },
-  REPORT_READY: { label: "Complete", tone: "text-success-green", orb: "bg-success-green" },
+  EVALUATING: {
+    label: "Evaluating…",
+    tone: "text-tertiary",
+    orb: "bg-tertiary",
+  },
+  REPORT_READY: {
+    label: "Complete",
+    tone: "text-success-green",
+    orb: "bg-success-green",
+  },
   ERROR: { label: "Disconnected", tone: "text-error-red", orb: "bg-error-red" },
 };
 
@@ -45,7 +69,10 @@ function formatElapsed(totalSeconds: number): string {
   return `${h}:${m}:${s}`;
 }
 
-export default function VoiceInterview({ interview, onExit }: VoiceInterviewProps) {
+export default function VoiceInterview({
+  interview,
+  onExit,
+}: VoiceInterviewProps) {
   const router = useRouter();
   const { start, stop } = useVoiceAgent();
   const { state, turns, error, currentQuestion, totalQuestions } =
@@ -61,20 +88,28 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
 
   // Kick off the single voice session once on mount.
   useEffect(() => {
+    // In React StrictMode, effects mount/unmount twice in dev.
+    // Keep startedRef as the guard so we don't start multiple voice sockets.
     if (startedRef.current) return;
     startedRef.current = true;
-    void start({
-      id: interview.id,
-      questions: (interview.questions ?? []).map((q) => ({
-        sequence: q.sequence,
-        ttsTranscript: q.ttsTranscript,
-        prompt: q.prompt,
-      })),
+
+    // Delay start so StrictMode cleanup from the “throwaway mount” runs first.
+    queueMicrotask(() => {
+      void start({
+        id: interview.id,
+        questions: (interview.questions ?? []).map((q) => ({
+          sequence: q.sequence,
+          ttsTranscript: q.ttsTranscript,
+          prompt: q.prompt,
+        })),
+      });
     });
+
     return () => {
-      startedRef.current = false;
+      // Stop the socket created by this mount.
       stop();
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -118,8 +153,12 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
         <div className="flex items-center gap-md">
           <span className="text-lg font-bold text-primary">InterviewAI</span>
           <span className="hidden sm:inline-flex items-center gap-sm bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant/20">
-            <span className="material-symbols-outlined text-primary text-sm">work</span>
-            <span className="text-sm font-bold">{interview.role} Interview</span>
+            <span className="material-symbols-outlined text-primary text-sm">
+              work
+            </span>
+            <span className="text-sm font-bold">
+              {interview.role} Interview
+            </span>
           </span>
         </div>
 
@@ -128,12 +167,20 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
             {progressLabel}
           </span>
           <div className="flex items-center gap-sm bg-surface-container px-3 py-1.5 rounded-lg border border-outline-variant/20">
-            <span className="material-symbols-outlined text-on-surface-variant text-sm">timer</span>
-            <span className="text-sm font-bold tabular-nums">{formatElapsed(elapsed)}</span>
+            <span className="material-symbols-outlined text-on-surface-variant text-sm">
+              timer
+            </span>
+            <span className="text-sm font-bold tabular-nums">
+              {formatElapsed(elapsed)}
+            </span>
           </div>
           <div className="flex items-center gap-sm px-3 py-1.5 rounded-full border border-outline-variant/20">
-            <span className={`w-2 h-2 rounded-full ${meta.orb} ${state !== "ERROR" ? "animate-pulse" : ""}`} />
-            <span className={`text-xs font-bold ${meta.tone}`}>{meta.label}</span>
+            <span
+              className={`w-2 h-2 rounded-full ${meta.orb} ${state !== "ERROR" ? "animate-pulse" : ""}`}
+            />
+            <span className={`text-xs font-bold ${meta.tone}`}>
+              {meta.label}
+            </span>
           </div>
           <button
             onClick={handleEnd}
@@ -145,10 +192,7 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
       </header>
 
       {/* Conversation window */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 md:px-0 py-8"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-0 py-8">
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
           {turns.length === 0 && (
             <div className="text-center text-sm text-on-surface-variant py-12">
@@ -170,11 +214,15 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold ${
-                      isAi ? "bg-primary text-white" : "bg-surface-container text-on-surface"
+                      isAi
+                        ? "bg-primary text-white"
+                        : "bg-surface-container text-on-surface"
                     }`}
                   >
                     {isAi ? (
-                      <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+                      <span className="material-symbols-outlined text-[18px]">
+                        smart_toy
+                      </span>
                     ) : (
                       "You"
                     )}
@@ -220,13 +268,17 @@ export default function VoiceInterview({ interview, onExit }: VoiceInterviewProp
                   ? "mic_off"
                   : isSpeaking
                     ? "graphic_eq"
-                    : state === "PROCESSING" || state === "WAITING_FOR_BACKEND" || state === "EVALUATING"
+                    : state === "PROCESSING" ||
+                        state === "WAITING_FOR_BACKEND" ||
+                        state === "EVALUATING"
                       ? "more_horiz"
                       : "mic"}
               </span>
             </div>
           </div>
-          <span className={`text-xs font-bold uppercase tracking-wider ${meta.tone}`}>
+          <span
+            className={`text-xs font-bold uppercase tracking-wider ${meta.tone}`}
+          >
             {meta.label}
           </span>
           {state === "REPORT_READY" && (
