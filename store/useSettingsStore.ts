@@ -6,9 +6,19 @@ interface SettingsState {
   provider: AIProvider;
   targetRole: string;
   voiceEnabled: boolean;
+  persistentContext: boolean;
+  gapAnalysis: boolean;
+  sessionReminders: boolean;
+  weeklyReports: boolean;
+  goalAchievements: boolean;
   setProvider: (p: AIProvider) => void;
   setTargetRole: (r: string) => void;
   setVoiceEnabled: (v: boolean) => void;
+  setPersistentContext: (v: boolean) => void;
+  setGapAnalysis: (v: boolean) => void;
+  setSessionReminders: (v: boolean) => void;
+  setWeeklyReports: (v: boolean) => void;
+  setGoalAchievements: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -17,9 +27,19 @@ export const useSettingsStore = create<SettingsState>()(
       provider: "gemini",
       targetRole: "Software Engineer",
       voiceEnabled: true,
+      persistentContext: true,
+      gapAnalysis: true,
+      sessionReminders: true,
+      weeklyReports: true,
+      goalAchievements: false,
       setProvider: (provider) => set({ provider }),
       setTargetRole: (targetRole) => set({ targetRole }),
       setVoiceEnabled: (voiceEnabled) => set({ voiceEnabled }),
+      setPersistentContext: (persistentContext) => set({ persistentContext }),
+      setGapAnalysis: (gapAnalysis) => set({ gapAnalysis }),
+      setSessionReminders: (sessionReminders) => set({ sessionReminders }),
+      setWeeklyReports: (weeklyReports) => set({ weeklyReports }),
+      setGoalAchievements: (goalAchievements) => set({ goalAchievements }),
     }),
     { name: "ima-settings" }
   )
