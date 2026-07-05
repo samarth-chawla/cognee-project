@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
 import { useVoiceAgentStore } from "@/store/useVoiceAgentStore";
+import { useInterviewStore } from "@/store/useInterviewStore";
 import type { ConversationState } from "@/types/voiceAgent";
 import type { Interview } from "@/types";
 import { ROUTES } from "@/lib/utils/constants";
@@ -181,7 +182,12 @@ export default function VoiceInterview({
   // When evaluation completes, move to the report.
   useEffect(() => {
     if (state === "REPORT_READY") {
-      const t = setTimeout(() => router.push(ROUTES.reports), 1200);
+      const t = setTimeout(() => {
+        // Clear the in-progress interview so returning to /interview
+        // shows the setup screen instead of a stale VoiceInterview session.
+        useInterviewStore.getState().reset();
+        router.push(ROUTES.reports);
+      }, 1200);
       return () => clearTimeout(t);
     }
   }, [state, router]);
