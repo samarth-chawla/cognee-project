@@ -59,10 +59,22 @@ export interface Evaluation {
   historicalProgress?: HistoricalProgress;
 }
 
+export interface ReportInterviewContext {
+  role: string;
+  company: string | null;
+  companyType: string | null;
+  customCompanyName: string | null;
+  interviewType: string | null;
+  difficulty: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+}
+
 export interface Report {
   id: ID;
   interviewId: ID;
   userId: ID;
+  interviewContext?: ReportInterviewContext;
   evaluation: Evaluation;
   createdAt: string;
 }

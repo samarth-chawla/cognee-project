@@ -15,7 +15,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API.reports}?userId=demo-user`)
+    fetch(API.reports)
       .then((r) => r.json())
       .then((j) => setReports(j.data ?? []))
       .catch((e) => console.error("Failed to load reports", e))
@@ -68,7 +68,7 @@ export default function ReportsPage() {
           ) : (
             <div className="space-y-8">
               {reports.map((report) => {
-                const { evaluation, id, createdAt } = report;
+                const { evaluation, id, createdAt, interviewContext: interview } = report;
                 const dateString = new Date(createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -76,6 +76,10 @@ export default function ReportsPage() {
                   hour: "2-digit",
                   minute: "2-digit"
                 });
+                const companyLabel = interview?.customCompanyName || interview?.company || null;
+                const durationLabel = interview?.startedAt && interview?.endedAt
+                  ? `${Math.max(1, Math.round((new Date(interview.endedAt).getTime() - new Date(interview.startedAt).getTime()) / 60000))} min`
+                  : null;
 
                 return (
                   <div
@@ -85,10 +89,28 @@ export default function ReportsPage() {
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-outline-variant/10">
                       <div>
-                        <span className="text-[10px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded tracking-wider uppercase">
-                          AI Assessment
-                        </span>
-                        <p className="text-xs text-on-surface-variant mt-2 font-medium">{dateString}</p>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="text-[10px] font-bold text-primary bg-primary/5 px-2.5 py-1 rounded tracking-wider uppercase">
+                            AI Assessment
+                          </span>
+                          {interview?.difficulty && (
+                            <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container/60 px-2.5 py-1 rounded tracking-wider uppercase">
+                              {interview.difficulty}
+                            </span>
+                          )}
+                          {interview?.interviewType && (
+                            <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container/60 px-2.5 py-1 rounded tracking-wider uppercase">
+                              {interview.interviewType}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-base font-extrabold text-on-surface">
+                          {interview?.role ?? "Mock Interview"}
+                          {companyLabel && <span className="font-semibold text-on-surface-variant"> · {companyLabel}</span>}
+                        </h3>
+                        <p className="text-xs text-on-surface-variant mt-1 font-medium">
+                          {dateString}{durationLabel && ` · ${durationLabel}`}
+                        </p>
                       </div>
                       <div className="flex items-center gap-4">
                         {/* Score Circle Gauge */}
@@ -197,6 +219,78 @@ export default function ReportsPage() {
                         </ul>
                       </div>
                     </div>
+
+                    {/* Missing Topics & Recommendations */}
+                    {(evaluation.missingTopics.length > 0 || evaluation.recommendations.length > 0) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {evaluation.missingTopics.length > 0 && (
+                          <div className="bg-surface-container/30 p-5 rounded-2xl border border-outline-variant/20">
+                            <p className="text-[10px] font-bold text-on-surface-variant mb-3 flex items-center gap-1 tracking-wider uppercase">
+                              <span className="material-symbols-outlined text-sm">quiz</span> Topics to Review
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {evaluation.missingTopics.map((topic, idx) => (
+                                <span key={idx} className="text-[11px] font-semibold bg-white border border-outline-variant/30 px-3 py-1 rounded-full">
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {evaluation.recommendations.length > 0 && (
+                          <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
+                            <p className="text-[10px] font-bold text-primary mb-3 flex items-center gap-1 tracking-wider uppercase">
+                              <span className="material-symbols-outlined text-sm">lightbulb</span> Recommendations
+                            </p>
+                            <ul className="space-y-2 text-xs">
+                              {evaluation.recommendations.map((rec, idx) => (
+                                <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5"></span>
+                                  <span>{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Historical Progress (only present once prior interview history exists) */}
+                    {evaluation.historicalProgress && (
+                      <div className="bg-secondary-fixed/30 p-5 rounded-2xl border border-outline-variant/20 space-y-3">
+                        <p className="text-[10px] font-bold text-on-surface-variant mb-1 flex items-center gap-1 tracking-wider uppercase">
+                          <span className="material-symbols-outlined text-sm">trending_up</span> Progress vs. Past Sessions
+                        </p>
+                        <p className="text-xs leading-relaxed">{evaluation.historicalProgress.overallTrend}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                          {evaluation.historicalProgress.improvedAreas.length > 0 && (
+                            <div>
+                              <span className="font-bold text-success-green">Improved: </span>
+                              {evaluation.historicalProgress.improvedAreas.join(", ")}
+                            </div>
+                          )}
+                          {evaluation.historicalProgress.regressedAreas.length > 0 && (
+                            <div>
+                              <span className="font-bold text-error-red">Regressed: </span>
+                              {evaluation.historicalProgress.regressedAreas.join(", ")}
+                            </div>
+                          )}
+                          {evaluation.historicalProgress.stableStrengths.length > 0 && (
+                            <div>
+                              <span className="font-bold text-on-surface">Stable strengths: </span>
+                              {evaluation.historicalProgress.stableStrengths.join(", ")}
+                            </div>
+                          )}
+                          {evaluation.historicalProgress.stillNeedsImprovement.length > 0 && (
+                            <div>
+                              <span className="font-bold text-on-surface">Still needs work: </span>
+                              {evaluation.historicalProgress.stillNeedsImprovement.join(", ")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -25,7 +25,7 @@ export const API = {
 
   evaluation: "/api/reports/generate",
   speech: "/api/speech/transcribe",
-  memory: "/api/memory/timeline",
+  memory: "/api/memory/graph",
   reports: "/api/interview/history",
   analytics: "/api/analytics",
 } as const;

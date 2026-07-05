@@ -129,14 +129,20 @@ export default function InterviewPage() {
           </header>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center p-12 bg-white border border-outline-variant/30 rounded-xxl shadow-2xl ai-glow w-full max-w-3xl mx-auto min-h-[400px] text-center">
+            <div className="flex flex-col items-center justify-center p-8 sm:p-12 bg-white border border-outline-variant/30 rounded-xxl shadow-2xl ai-glow w-full max-w-3xl mx-auto min-h-[400px] text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-pulse">
                 <span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span>
               </div>
-              <h3 className="text-xl font-bold mb-2">Generating Tailored Questions...</h3>
-              <p className="text-sm text-on-surface-variant max-w-md">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Generating Tailored Questions...</h3>
+              <p className="w-full text-sm sm:text-base text-on-surface-variant ">
                 ARIA is analyzing your target role (<span className="font-semibold text-primary">{targetRole}</span>) and past performance memory to compile the optimal session syllabus.
               </p>
+              <button
+                onClick={() => cancel()}
+                className="mt-6 px-6 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-semibold text-on-surface-variant hover:border-error-red/50 hover:text-error-red transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-xl">

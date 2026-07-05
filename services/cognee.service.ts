@@ -257,6 +257,27 @@ function extractSectionItems(
   return Array.from(new Set(items)).slice(0, 5);
 }
 
+// ── Generic memory read (used by /dashboard/memory) ──────────────────────
+
+/** Free-form recall for UI display — returns clean fact lines, never throws. */
+export async function recallFacts(query: string): Promise<string[]> {
+  try {
+    const result = await recall(query);
+    return result
+      .map(getRecallText)
+      .filter((m): m is string => Boolean(m))
+      .filter(isUsefulMemoryText)
+      .flatMap((m) => splitMemoryLines([m]));
+  } catch (reason) {
+    logRecallFailed({
+      purpose: "memory-page",
+      reason: reason instanceof Error ? reason.message : String(reason),
+      durationMs: 0,
+    });
+    return [];
+  }
+}
+
 // ── Phase 4/5: recallCandidateMemory() ───────────────────────────────────
 
 function buildCandidateMemoryQuery(params: CandidateMemoryRecallParams): string {

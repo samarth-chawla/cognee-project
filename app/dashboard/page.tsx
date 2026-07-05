@@ -207,11 +207,11 @@ export default function DashboardPage() {
                   <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">INTERVIEWS</p>
                   <p className="text-base font-extrabold text-on-surface">{totalInterviews}</p>
                 </div>
-                <div className="h-8 w-[1px] bg-outline-variant/30"></div>
+                {/* <div className="h-8 w-[1px] bg-outline-variant/30"></div>
                 <div className="text-center flex flex-col items-center">
                   <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">PRACTICE</p>
                   <p className="text-base font-extrabold text-on-surface">{Math.max(1, totalInterviews * 1.5)}h</p>
-                </div>
+                </div> */}
               </div>
             </section>
 

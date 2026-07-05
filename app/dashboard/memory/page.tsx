@@ -1,51 +1,123 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import Sidebar from "@/components/common/Sidebar";
 import { API } from "@/lib/utils/constants";
-import type { MemoryNode } from "@/types";
-import { useSettingsStore } from "@/store/useSettingsStore";
+import type { MemoryNode, Report } from "@/types";
+import {
+  CATEGORY_KEYS,
+  CATEGORY_LABELS,
+  companyReadiness,
+  computeStreak,
+  keyImprovements,
+  latestAndDelta,
+  recurringPatterns,
+  scoreSeries,
+  strongestAndWeakestCategory,
+  weeklySessionCount,
+} from "@/lib/utils/memoryInsights";
+
+interface ProfileData {
+  profile?: { targetRole?: string | null; targetCompanies?: string[] } | null;
+}
+
+interface ChecklistItem {
+  id: number;
+  text: string;
+  checked: boolean;
+}
+
+const WEEKLY_GOAL_TARGET = 5;
 
 export default function MemoryPage() {
-  const { targetRole } = useSettingsStore();
+  const { user } = useUser();
   const [nodes, setNodes] = useState<MemoryNode[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Next steps checklist toggles
-  const [checklist, setChecklist] = useState([
-    { id: 1, text: "Practice System Design: Focus on Load Balancers", checked: false },
-    { id: 2, text: "Take JOB full-length mock session", checked: false },
-    { id: 3, text: "Review 'Complexity Analysis' for recent solutions", checked: false },
-    { id: 4, text: "Refine behavioral answers using the STAR method", checked: false }
-  ]);
-
-  const toggleChecklist = (id: number) => {
-    setChecklist(
-      checklist.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
-      )
-    );
-  };
+  const [loadingNodes, setLoadingNodes] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [memoryOk, setMemoryOk] = useState<boolean | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
 
   const fetchMemory = (q?: string) => {
-    setLoading(true);
-    const url = q
-      ? `${API.memory}?userId=demo-user&q=${encodeURIComponent(q)}`
-      : `${API.memory}?userId=demo-user`;
+    setLoadingNodes(true);
+    const url = q ? `${API.memory}?q=${encodeURIComponent(q)}` : API.memory;
     fetch(url)
       .then((r) => r.json())
       .then((j) => {
         const data = j.data;
         setNodes(Array.isArray(data) ? data : data?.nodes ?? []);
-        setLoading(false);
+        setMemoryOk(Boolean(j.success ?? j.ok));
       })
-      .catch(() => setLoading(false));
+      .catch(() => setMemoryOk(false))
+      .finally(() => setLoadingNodes(false));
   };
 
   useEffect(() => {
-    fetchMemory();
+    const url = API.memory;
+    fetch(url)
+      .then((r) => r.json())
+      .then((j) => {
+        const data = j.data;
+        setNodes(Array.isArray(data) ? data : data?.nodes ?? []);
+        setMemoryOk(Boolean(j.success ?? j.ok));
+      })
+      .catch(() => setMemoryOk(false))
+      .finally(() => setLoadingNodes(false));
+
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((j) => setProfile(j.data ?? null))
+      .catch(() => setProfile(null));
+
+    fetch(API.reports)
+      .then((r) => r.json())
+      .then((j) => setReports(Array.isArray(j.data) ? j.data : []))
+      .catch(() => setReports([]))
+      .finally(() => setLoadingReports(false));
   }, []);
+
+  const sortedDesc = [...reports].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  const latestReport = sortedDesc[0] ?? null;
+
+  const checklistTexts = latestReport
+    ? (latestReport.evaluation.recommendations.length > 0
+        ? latestReport.evaluation.recommendations
+        : ["Complete another mock session to keep building your profile."]
+      ).slice(0, 4)
+    : [];
+  const checklist: ChecklistItem[] = checklistTexts.map((text, id) => ({
+    id,
+    text,
+    checked: checkedIds.has(id),
+  }));
+
+  const toggleChecklist = (id: number) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const skillExtremes = strongestAndWeakestCategory(reports);
+  const patterns = recurringPatterns(reports, 2);
+  const companies = companyReadiness(reports);
+  const streak = computeStreak(reports);
+  const weeklyCount = weeklySessionCount(reports);
+  const improvements = keyImprovements(reports, 2);
+  const confidenceSeries = scoreSeries(reports, "confidenceScore").slice(-8);
+  const maxConfidence = Math.max(1, ...confidenceSeries.map((p) => p.value));
+  const targetRole = profile?.profile?.targetRole ?? null;
+  const targetCompany = profile?.profile?.targetCompanies?.[0] || companies[0]?.company || null;
+  const communicationLatest = latestAndDelta(reports, "communicationScore");
+
+  const displayName = user?.fullName || user?.firstName || "Candidate";
+  const avatarUrl = user?.imageUrl;
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md flex">
@@ -68,7 +140,7 @@ export default function MemoryPage() {
           </header>
 
           {/* Search bar */}
-          <div className="flex gap-4 max-w-xl">
+          {/* <div className="flex gap-4 max-w-xl">
             <div className="relative flex-1">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
               <input
@@ -86,7 +158,7 @@ export default function MemoryPage() {
             >
               Search
             </button>
-          </div>
+          </div> */}
 
           {/* AI Memory Summary Card */}
           <section className="grid grid-cols-1 md:grid-cols-12 gap-lg bg-surface-indigo rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
@@ -97,27 +169,27 @@ export default function MemoryPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm font-semibold">
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Target Company</p>
-                  <p className="text-base text-primary">JOB</p>
+                  <p className="text-base text-primary">{targetCompany ?? "Not set"}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Strong Skill</p>
-                  <p className="text-base text-success-green">React</p>
+                  <p className="text-base text-success-green">{skillExtremes?.strongest.label ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Weak Skill</p>
-                  <p className="text-base text-error-red">System Design</p>
+                  <p className="text-base text-error-red">{skillExtremes?.weakest.label ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Confidence</p>
-                  <p className="text-base text-primary">81%</p>
+                  <p className="text-base text-primary">{latestReport ? `${latestReport.evaluation.confidenceScore}%` : "—"}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Interviews Taken</p>
-                  <p className="text-base text-primary">12</p>
+                  <p className="text-base text-primary">{reports.length}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Streak</p>
-                  <p className="text-base text-primary">8 days</p>
+                  <p className="text-base text-primary">{streak} {streak === 1 ? "day" : "days"}</p>
                 </div>
               </div>
             </div>
@@ -128,13 +200,13 @@ export default function MemoryPage() {
             {/* Main Timeline */}
             <section className="lg:col-span-7 space-y-6">
               <h3 className="text-lg font-bold text-on-surface">Experience Log & Memory Nodes</h3>
-              
+
               <div className="relative pl-8 space-y-6 border-l border-outline-variant/30">
-                {/* Dynamically Loaded Memory Nodes */}
-                {loading ? (
+                {/* Dynamically Loaded Memory Nodes (live Cognee recall) */}
+                {loadingNodes ? (
                   <div className="text-sm text-on-surface-variant flex items-center gap-2 p-4">
                     <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                    Loading timeline...
+                    Loading memory...
                   </div>
                 ) : nodes.length > 0 ? (
                   nodes.map((node, idx) => (
@@ -150,68 +222,57 @@ export default function MemoryPage() {
                   ))
                 ) : (
                   <div className="text-xs text-on-surface-variant p-4 bg-white rounded-xl border border-outline-variant/20 italic">
-                    No active runtime database nodes found. Below are your localized milestone logs.
+                    No AI memory facts recalled yet.
                   </div>
                 )}
 
-                {/* Static Milestone Items */}
-                <div className="relative group">
-                  <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-surface-container-highest border-4 border-background flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[10px] text-primary">history</span>
+                {/* Real interview session history */}
+                {loadingReports ? (
+                  <div className="text-sm text-on-surface-variant flex items-center gap-2 p-4">
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                    Loading session history...
                   </div>
-                  <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group-hover:border-primary/30">
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">June 10</span>
-                    <h4 className="text-sm font-bold text-on-surface mt-1">First Interview</h4>
-                    <div className="mt-3 flex gap-4 text-xs font-semibold">
-                      <span className="bg-surface-container-high px-2 py-1 rounded">Score: 62%</span>
-                      <span className="bg-error-container text-on-error-container px-2 py-1 rounded">Weak in hooks</span>
-                    </div>
+                ) : sortedDesc.length === 0 ? (
+                  <div className="text-xs text-on-surface-variant p-4 bg-white rounded-xl border border-outline-variant/20 italic">
+                    No completed interviews yet — your session history will appear here.
                   </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-primary-container border-4 border-background flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[10px] text-on-primary-container">trending_up</span>
-                  </div>
-                  <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group-hover:border-primary/30">
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">June 15</span>
-                    <h4 className="text-sm font-bold text-on-surface mt-1">Second Interview</h4>
-                    <p className="mt-2 text-xs text-success-green font-bold">+8% Confidence Boost</p>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-surface-container-highest border-4 border-background flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[10px] text-primary">apartment</span>
-                  </div>
-                  <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group-hover:border-primary/30">
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">June 22</span>
-                    <h4 className="text-sm font-bold text-on-surface mt-1">JOB Mock Session</h4>
-                    <div className="mt-3 space-y-2 text-xs">
-                      <div className="flex justify-between font-semibold">
-                        <span>Overall Score</span>
-                        <span className="font-bold">78%</span>
+                ) : (
+                  sortedDesc.map((report) => {
+                    const dateLabel = new Date(report.createdAt).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                    });
+                    const topWeakness = report.evaluation.weaknesses[0] ?? report.evaluation.missingTopics[0] ?? null;
+                    const companyLabel =
+                      report.interviewContext?.customCompanyName || report.interviewContext?.company;
+                    return (
+                      <div key={report.id} className="relative group">
+                        <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-surface-container-highest border-4 border-background flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[10px] text-primary">apartment</span>
+                        </div>
+                        <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow group-hover:border-primary/30">
+                          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{dateLabel}</span>
+                          <h4 className="text-sm font-bold text-on-surface mt-1">
+                            {report.interviewContext?.role ?? "Mock Interview"}
+                            {companyLabel && <span className="font-semibold text-on-surface-variant"> · {companyLabel}</span>}
+                          </h4>
+                          <div className="mt-3 space-y-2 text-xs">
+                            <div className="flex justify-between font-semibold">
+                              <span>Overall Score</span>
+                              <span className="font-bold">{report.evaluation.overallScore}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                              <div className="h-full bg-primary" style={{ width: `${report.evaluation.overallScore}%` }}></div>
+                            </div>
+                            {topWeakness && (
+                              <p className="text-xs text-error-red leading-relaxed font-semibold">{topWeakness}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: "78%" }}></div>
-                      </div>
-                      <p className="text-xs text-error-red leading-relaxed font-semibold">Critical weakness identified in System Design scalability.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-primary border-4 border-background flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-[10px]">star</span>
-                  </div>
-                  <div className="bg-primary text-white p-6 rounded-2xl shadow-lg transform group-hover:scale-[1.01] transition-transform">
-                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-wider">July 1</span>
-                    <h4 className="text-sm font-bold mt-1">Confidence Milestone: 81%</h4>
-                    <p className="mt-2 text-xs opacity-90 leading-relaxed">
-                      Communication significantly improved. AI detected consistent professional phrasing and clear structure in technical explanations.
-                    </p>
-                  </div>
-                </div>
+                    );
+                  })
+                )}
               </div>
             </section>
 
@@ -220,98 +281,98 @@ export default function MemoryPage() {
               {/* Memory Graph Visualizer */}
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-on-surface">Relationship Map</h3>
-                <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl h-80 relative overflow-hidden p-6">
-                  <div className="relative h-full flex items-center justify-center">
-                    <div className="absolute top-1/4 left-1/4 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold animate-pulse">
-                      <span className="w-2 h-2 bg-primary rounded-full"></span> React
+                {skillExtremes ? (
+                  <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl h-80 relative overflow-hidden p-6">
+                    <div className="relative h-full flex items-center justify-center">
+                      <div className="absolute top-1/4 left-1/4 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold animate-pulse">
+                        <span className="w-2 h-2 bg-success-green rounded-full"></span> {skillExtremes.strongest.label}
+                      </div>
+                      <div className="absolute bottom-1/3 left-1/3 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold">
+                        <span className="w-2 h-2 bg-error rounded-full"></span> {skillExtremes.weakest.label}
+                      </div>
+                      <div className="absolute top-1/2 right-1/4 bg-primary text-white p-2 rounded-lg shadow-md flex items-center gap-2 text-xs font-bold">
+                        <span className="w-2 h-2 bg-white rounded-full"></span> {targetCompany ?? "Target Role"}
+                      </div>
+                      <div className="absolute bottom-1/4 right-1/3 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold">
+                        <span className="w-2 h-2 bg-success-green rounded-full"></span> Communication ({communicationLatest.value}%)
+                      </div>
+
+                      {/* SVG Connector Lines */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
+                        <line stroke="#1e00a9" strokeWidth="1.5" x1="30%" x2="40%" y1="30%" y2="60%"></line>
+                        <line stroke="#1e00a9" strokeWidth="1.5" x1="40%" x2="70%" y1="60%" y2="50%"></line>
+                        <line stroke="#1e00a9" strokeWidth="1.5" x1="70%" x2="60%" y1="50%" y2="70%"></line>
+                      </svg>
                     </div>
-                    <div className="absolute bottom-1/3 left-1/3 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold">
-                      <span className="w-2 h-2 bg-error rounded-full"></span> System Design
-                    </div>
-                    <div className="absolute top-1/2 right-1/4 bg-primary text-white p-2 rounded-lg shadow-md flex items-center gap-2 text-xs font-bold">
-                      <span className="w-2 h-2 bg-white rounded-full"></span> JOB
-                    </div>
-                    <div className="absolute bottom-1/4 right-1/3 bg-white p-2 rounded-lg shadow-sm border border-outline-variant/30 flex items-center gap-2 text-xs font-bold">
-                      <span className="w-2 h-2 bg-success-green rounded-full"></span> Communication
-                    </div>
-                    
-                    {/* SVG Connector Lines */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
-                      <line stroke="#1e00a9" strokeWidth="1.5" x1="30%" x2="40%" y1="30%" y2="60%"></line>
-                      <line stroke="#1e00a9" strokeWidth="1.5" x1="40%" x2="70%" y1="60%" y2="50%"></line>
-                      <line stroke="#1e00a9" strokeWidth="1.5" x1="70%" x2="60%" y1="50%" y2="70%"></line>
-                    </svg>
+                    <p className="absolute bottom-4 left-4 text-[10px] text-on-surface-variant font-bold italic">Connecting skills to success patterns...</p>
                   </div>
-                  <p className="absolute bottom-4 left-4 text-[10px] text-on-surface-variant font-bold italic">Connecting skills to success patterns...</p>
-                </div>
+                ) : (
+                  <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-6 text-xs text-on-surface-variant italic">
+                    Complete an interview to unlock your relationship map.
+                  </div>
+                )}
               </div>
 
               {/* Growth Charts */}
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-on-surface">Confidence Journey</h3>
-                <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm">
-                  <div className="flex items-end gap-2 h-32 mb-4">
-                    <div className="flex-1 bg-surface-container-high rounded-t-lg transition-all hover:bg-primary/20" style={{ height: "60%" }}></div>
-                    <div className="flex-1 bg-surface-container-high rounded-t-lg transition-all hover:bg-primary/20" style={{ height: "65%" }}></div>
-                    <div className="flex-1 bg-surface-container-high rounded-t-lg transition-all hover:bg-primary/20" style={{ height: "62%" }}></div>
-                    <div className="flex-1 bg-surface-container-high rounded-t-lg transition-all hover:bg-primary/20" style={{ height: "70%" }}></div>
-                    <div className="flex-1 bg-surface-container-high rounded-t-lg transition-all hover:bg-primary/20" style={{ height: "78%" }}></div>
-                    <div className="flex-1 bg-primary rounded-t-lg transition-all" style={{ height: "81%" }}></div>
+                {confidenceSeries.length > 0 ? (
+                  <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm">
+                    <div className="flex items-end gap-2 h-32 mb-4">
+                      {confidenceSeries.map((point, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex-1 rounded-t-lg transition-all ${
+                            idx === confidenceSeries.length - 1 ? "bg-primary" : "bg-surface-container-high hover:bg-primary/20"
+                          }`}
+                          style={{ height: `${Math.max(4, (point.value / maxConfidence) * 100)}%` }}
+                        ></div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-on-surface-variant px-1">
+                      <span>Start</span>
+                      <span>Current ({confidenceSeries[confidenceSeries.length - 1].value}%)</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-[10px] font-bold text-on-surface-variant px-1">
-                    <span>Start</span>
-                    <span>Current (81%)</span>
+                ) : (
+                  <div className="bg-white border border-outline-variant/30 p-6 rounded-2xl shadow-sm text-xs text-on-surface-variant italic">
+                    Not enough sessions yet to chart a confidence trend.
                   </div>
-                </div>
+                )}
               </div>
             </section>
           </div>
 
           {/* Skills & Readiness Grid */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
-            <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm ai-glow">
-              <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">React Evolution</p>
-              <div className="flex items-end justify-between">
-                <h5 className="text-xl font-extrabold text-primary">90%</h5>
-                <span className="text-success-green font-bold text-xs">+12%</span>
-              </div>
-              <div className="mt-3 w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: "90%" }}></div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
-              <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">JavaScript Core</p>
-              <div className="flex items-end justify-between">
-                <h5 className="text-xl font-extrabold text-primary">85%</h5>
-                <span className="text-success-green font-bold text-xs">+5%</span>
-              </div>
-              <div className="mt-3 w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: "85%" }}></div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
-              <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">System Design</p>
-              <div className="flex items-end justify-between">
-                <h5 className="text-xl font-extrabold text-error-red">55%</h5>
-                <span className="text-error-red font-bold text-xs">-2%</span>
-              </div>
-              <div className="mt-3 w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                <div className="h-full bg-error-red/40" style={{ width: "55%" }}></div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
-              <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Communication</p>
-              <div className="flex items-end justify-between">
-                <h5 className="text-xl font-extrabold text-primary">78%</h5>
-                <span className="text-success-green font-bold text-xs">+18%</span>
-              </div>
-              <div className="mt-3 w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: "78%" }}></div>
-              </div>
-            </div>
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-lg">
+            {CATEGORY_KEYS.map((key) => {
+              const { value, delta } = latestAndDelta(reports, key);
+              const isWeak = skillExtremes?.weakest.label === CATEGORY_LABELS[key];
+              return (
+                <div
+                  key={key}
+                  className={`bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm ${
+                    skillExtremes?.strongest.label === CATEGORY_LABELS[key] ? "ai-glow" : ""
+                  }`}
+                >
+                  <p className="text-[10px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">{CATEGORY_LABELS[key]}</p>
+                  <div className="flex items-end justify-between">
+                    <h5 className={`text-xl font-extrabold ${isWeak ? "text-error-red" : "text-primary"}`}>
+                      {reports.length > 0 ? `${value}%` : "—"}
+                    </h5>
+                    {delta !== null && (
+                      <span className={`font-bold text-xs ${delta >= 0 ? "text-success-green" : "text-error-red"}`}>
+                        {delta >= 0 ? "+" : ""}
+                        {delta}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3 w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                    <div className={`h-full ${isWeak ? "bg-error-red/40" : "bg-primary"}`} style={{ width: `${value}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
           </section>
 
           {/* Patterns & Insights */}
@@ -319,24 +380,25 @@ export default function MemoryPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-on-surface">Patterns Detected</h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-4 bg-white border border-outline-variant/30 p-4 rounded-xl">
-                  <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
-                    <span className="material-symbols-outlined">warning</span>
+                {patterns.length > 0 ? (
+                  patterns.map((pattern, idx) => (
+                    <div key={idx} className="flex items-center gap-4 bg-white border border-outline-variant/30 p-4 rounded-xl">
+                      <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
+                        <span className="material-symbols-outlined">warning</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">{pattern.text}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          Detected in {pattern.count} session{pattern.count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white border border-outline-variant/30 p-4 rounded-xl text-xs text-on-surface-variant italic">
+                    No recurring patterns detected yet.
                   </div>
-                  <div>
-                    <p className="font-bold text-sm">Misses edge cases</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Detected in 4 recent sessions</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 bg-white border border-outline-variant/30 p-4 rounded-xl">
-                  <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
-                    <span className="material-symbols-outlined">analytics</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm">Doesn&apos;t discuss complexity</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Repeated 4 times</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
             <div className="space-y-4">
@@ -346,9 +408,16 @@ export default function MemoryPage() {
                 <div>
                   <h4 className="text-base font-bold text-primary mb-1">Performance Profile</h4>
                   <p className="text-xs text-on-surface-variant leading-relaxed">
-                    You perform significantly better in <span className="font-bold text-primary">frontend interviews</span>. Your confidence scores are 24% higher when discussing DOM optimization compared to backend architectural patterns.
+                    {skillExtremes ? (
+                      <>
+                        You perform strongest in <span className="font-bold text-primary">{skillExtremes.strongest.label}</span> ({skillExtremes.strongest.value}%),
+                        with the biggest gap in <span className="font-bold text-primary">{skillExtremes.weakest.label}</span> ({skillExtremes.weakest.value}%) —
+                        a {skillExtremes.strongest.value - skillExtremes.weakest.value}% spread in your latest session.
+                      </>
+                    ) : (
+                      "Complete a mock session to unlock your performance profile."
+                    )}
                   </p>
-                  <button className="mt-4 text-primary font-bold text-xs hover:underline cursor-pointer">View full analysis →</button>
                 </div>
               </div>
             </div>
@@ -357,35 +426,25 @@ export default function MemoryPage() {
           {/* Company Readiness */}
           <section className="space-y-4">
             <h3 className="text-lg font-bold text-on-surface">Company Readiness</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg text-xs font-semibold">
-              <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="tracking-wider uppercase text-on-surface-variant">JOB</span>
-                  <span className="font-bold text-primary">82%</span>
-                </div>
-                <div className="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: "82%" }}></div>
-                </div>
+            {companies.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-lg text-xs font-semibold">
+                {companies.slice(0, 3).map((c) => (
+                  <div key={c.company} className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="tracking-wider uppercase text-on-surface-variant">{c.company}</span>
+                      <span className="font-bold text-primary">{c.average}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${c.average}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="tracking-wider uppercase text-on-surface-variant">Google</span>
-                  <span className="font-bold text-on-surface-variant">68%</span>
-                </div>
-                <div className="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
-                  <div className="h-full bg-outline" style={{ width: "68%" }}></div>
-                </div>
+            ) : (
+              <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm text-xs text-on-surface-variant italic">
+                Practice with a specific company target to see readiness scores here.
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-sm space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="tracking-wider uppercase text-on-surface-variant">Microsoft</span>
-                  <span className="font-bold text-on-surface-variant">74%</span>
-                </div>
-                <div className="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
-                  <div className="h-full bg-outline" style={{ width: "74%" }}></div>
-                </div>
-              </div>
-            </div>
+            )}
           </section>
 
           {/* Next Steps Checklist */}
@@ -421,15 +480,16 @@ export default function MemoryPage() {
         {/* User Profile */}
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 rounded-full overflow-hidden bg-primary-container flex items-center justify-center shrink-0">
-            <img
-              className="w-full h-full object-cover"
-              alt="Alex Chen"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvaLOmMAefNgG3cj6s-UlifTb98lzvdDkfh53FgyvxujnQTpTi620VjDXAWDUoa2NLJ4DXRHcFrXYTi5SJBn3ovp3EEmY_TfwxEiK0b0TI0gXpVmBoPYXI8FYOPhSs44KN4mfzn7-yeVmpwqiuxvaioCQ5owHM20235cbyZK1ZhiQh3zErD9NdDLBlxdPCPgkunfrfv90HatQkbJH3T4iH5ZKkq_pV3_qzdpEyLrQ_QTnDSo850UeKxKlBniqVCCJG8DiOjlTc4Sxn"
-            />
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="w-full h-full object-cover" alt={displayName} src={avatarUrl} />
+            ) : (
+              <span className="text-sm font-bold text-white">{displayName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <div>
-            <p className="text-sm font-bold text-on-surface">Alex Chen</p>
-            <p className="text-[10px] text-on-surface-variant font-semibold">Senior Frontend Lead Prep</p>
+            <p className="text-sm font-bold text-on-surface">{displayName}</p>
+            <p className="text-[10px] text-on-surface-variant font-semibold">{targetRole ?? "Set a target role in Settings"}</p>
           </div>
         </div>
 
@@ -440,11 +500,11 @@ export default function MemoryPage() {
             <span className="material-symbols-outlined text-primary text-sm">local_fire_department</span>
           </div>
           <div className="flex items-baseline gap-1">
-            <p className="text-3xl font-extrabold text-primary">8</p>
+            <p className="text-3xl font-extrabold text-primary">{streak}</p>
             <p className="text-xs text-on-surface-variant font-semibold">Days of growth</p>
           </div>
           <div className="mt-3 flex gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            {Array.from({ length: Math.max(streak, 1) }).map((_, i) => (
               <div key={i} className="flex-1 h-1 bg-primary rounded-full"></div>
             ))}
           </div>
@@ -456,19 +516,13 @@ export default function MemoryPage() {
           <div className="bg-white p-4 rounded-xl border border-outline-variant/30 shadow-sm space-y-2">
             <div className="flex justify-between text-xs font-semibold">
               <span>Mock Sessions</span>
-              <span>3/5</span>
+              <span>{weeklyCount}/{WEEKLY_GOAL_TARGET}</span>
             </div>
             <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: "60%" }}></div>
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-xl border border-outline-variant/30 shadow-sm space-y-2">
-            <div className="flex justify-between text-xs font-semibold">
-              <span>New Topics</span>
-              <span>1/2</span>
-            </div>
-            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: "50%" }}></div>
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${Math.min(100, (weeklyCount / WEEKLY_GOAL_TARGET) * 100)}%` }}
+              ></div>
             </div>
           </div>
         </div>
@@ -476,21 +530,36 @@ export default function MemoryPage() {
         {/* Key Improvements */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Key Improvements</h4>
-          <div className="bg-success-green/5 p-4 rounded-xl border border-success-green/10 flex items-start gap-3">
-            <span className="material-symbols-outlined text-success-green text-sm shrink-0 mt-0.5">check_circle</span>
-            <p className="text-xs text-on-surface-variant leading-relaxed">Structured behavioral storytelling improved by 40%.</p>
-          </div>
-          <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 flex items-start gap-3">
-            <span className="material-symbols-outlined text-primary text-sm shrink-0 mt-0.5">bolt</span>
-            <p className="text-xs text-on-surface-variant leading-relaxed">Average response time for coding challenges reduced by 4 mins.</p>
-          </div>
+          {improvements.length > 0 ? (
+            improvements.map((imp) => (
+              <div key={imp.label} className="bg-success-green/5 p-4 rounded-xl border border-success-green/10 flex items-start gap-3">
+                <span className="material-symbols-outlined text-success-green text-sm shrink-0 mt-0.5">check_circle</span>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  {imp.label} improved by {imp.deltaPct}% since your first session.
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="bg-surface-container/30 p-4 rounded-xl border border-outline-variant/20 flex items-start gap-3">
+              <span className="material-symbols-outlined text-on-surface-variant text-sm shrink-0 mt-0.5">info</span>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Complete a few more sessions to reveal improvement trends.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* AI Status */}
         <div className="mt-auto pt-6">
           <div className="p-3 bg-surface-indigo rounded-xl flex items-center gap-3 border border-primary/5">
-            <div className="w-2.5 h-2.5 bg-success-green rounded-full animate-pulse"></div>
-            <p className="text-[10px] text-on-surface-variant font-bold">AI Memory syncing live...</p>
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${
+                memoryOk === false ? "bg-error-red" : "bg-success-green animate-pulse"
+              }`}
+            ></div>
+            <p className="text-[10px] text-on-surface-variant font-bold">
+              {memoryOk === false ? "AI Memory unavailable" : "AI Memory syncing live..."}
+            </p>
           </div>
         </div>
       </aside>

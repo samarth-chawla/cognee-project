@@ -63,10 +63,23 @@ export async function saveReport(
 }
 
 function prismaReportToReport(report: any, userId: string): Report {
+  const interview = report.interview;
   return {
     id: report.id,
     interviewId: report.interviewId,
     userId,
+    interviewContext: interview
+      ? {
+          role: interview.role,
+          company: interview.company,
+          companyType: interview.companyType,
+          customCompanyName: interview.customCompanyName,
+          interviewType: interview.interviewType,
+          difficulty: interview.difficulty,
+          startedAt: interview.startedAt ? interview.startedAt.toISOString() : null,
+          endedAt: interview.endedAt ? interview.endedAt.toISOString() : null,
+        }
+      : undefined,
     evaluation: {
       id: report.id,
       interviewId: report.interviewId,
@@ -87,10 +100,22 @@ function prismaReportToReport(report: any, userId: string): Report {
   };
 }
 
+const INTERVIEW_SELECT = {
+  userId: true,
+  role: true,
+  company: true,
+  companyType: true,
+  customCompanyName: true,
+  interviewType: true,
+  difficulty: true,
+  startedAt: true,
+  endedAt: true,
+} as const;
+
 export async function listReports(userId: string): Promise<Report[]> {
   const reports = await prisma.report.findMany({
     where: { interview: { userId } },
-    include: { interview: { select: { userId: true } } },
+    include: { interview: { select: INTERVIEW_SELECT } },
     orderBy: { createdAt: "desc" },
   });
   return reports.map((r) => prismaReportToReport(r, r.interview.userId));
@@ -99,7 +124,7 @@ export async function listReports(userId: string): Promise<Report[]> {
 export async function getReport(reportId: string): Promise<Report | null> {
   const report = await prisma.report.findUnique({
     where: { id: reportId },
-    include: { interview: { select: { userId: true } } },
+    include: { interview: { select: INTERVIEW_SELECT } },
   });
   if (!report) return null;
   return prismaReportToReport(report, report.interview.userId);

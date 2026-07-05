@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useInterviewStore } from "@/store/useInterviewStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { API } from "@/lib/utils/constants";
@@ -12,10 +12,15 @@ export function useInterview() {
   const { targetRole, provider } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const pendingInterviewIdRef = useRef<string | null>(null);
 
-  /** Cancel current interview: marks DB row ABORTED then clears local state. */
+  /** Cancel current interview (including mid-generation): aborts in-flight requests, marks DB row ABORTED, clears local state. */
   const cancel = useCallback(async () => {
-    const interviewId = useInterviewStore.getState().current?.id;
+    abortControllerRef.current?.abort();
+    const interviewId = useInterviewStore.getState().current?.id ?? pendingInterviewIdRef.current;
+    pendingInterviewIdRef.current = null;
+    setLoading(false);
     reset(); // clear UI immediately — don't await
     if (interviewId) {
       try {
@@ -44,25 +49,30 @@ export function useInterview() {
   const start = useCallback(async (payload?: any) => {
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
       const res = await fetch(API.interview, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: targetRole, provider, ...payload }),
+        signal: controller.signal,
       });
       const json = await res.json();
-      
+
       if (!json.success && !json.ok) throw new Error(json.message || json.error);
-      
+
       // Phase 2 Step 1 returns { interviewId, status: "GENERATING" }.
       // Call the Step 2 API to actually generate questions via Gemini
       if (json.data?.status === "GENERATING") {
+        pendingInterviewIdRef.current = json.data.interviewId;
         const genRes = await fetch("/api/interview/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ interviewId: json.data.interviewId }),
+          signal: controller.signal,
         });
-        
+
         const genJson = await genRes.json();
         if (!genJson.success) throw new Error(genJson.error || "Failed to generate questions");
 
@@ -82,11 +92,17 @@ export function useInterview() {
           updatedAt: new Date().toISOString(),
         } as any);
       } else {
+        pendingInterviewIdRef.current = json.data?.id ?? null;
         setInterview(json.data as Interview);
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return; // user cancelled
       setError(e instanceof Error ? e.message : "Failed to start");
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        pendingInterviewIdRef.current = null;
+      }
       setLoading(false);
     }
   }, [targetRole, provider, setInterview]);

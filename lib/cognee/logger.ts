@@ -85,7 +85,7 @@ export function logRecallStart(context: {
   role?: string | null;
   company?: string | null;
   interviewType?: string | null;
-  purpose: "question-generation" | "evaluation-history";
+  purpose: "question-generation" | "evaluation-history" | "memory-page";
 }): void {
   log("Recall started", {
     purpose: context.purpose,
@@ -97,7 +97,7 @@ export function logRecallStart(context: {
 }
 
 export function logRecallComplete(context: {
-  purpose: "question-generation" | "evaluation-history";
+  purpose: "question-generation" | "evaluation-history" | "memory-page";
   count: number;
   durationMs: number;
 }): void {
@@ -109,7 +109,7 @@ export function logRecallComplete(context: {
 }
 
 export function logRecallFailed(context: {
-  purpose: "question-generation" | "evaluation-history";
+  purpose: "question-generation" | "evaluation-history" | "memory-page";
   reason: string;
   durationMs: number;
 }): void {
