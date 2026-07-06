@@ -6,6 +6,16 @@
   color-scheme: light;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @theme {
   /* Stitch Design System Color Palette */
   --color-on-tertiary: #ffffff;

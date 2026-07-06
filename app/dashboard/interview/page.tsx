@@ -311,7 +311,7 @@ export default function InterviewPage() {
                 <div className="bg-primary p-6 rounded-xxl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden text-white">
                   <div>
                     <h3 className="text-lg font-bold">Your AI interviewer is ready.</h3>
-                    <p className="text-primary-container text-xs opacity-90">Session tailored to {targetRole} role at {selectedCompany}.</p>
+                    <p className="text-white text-xs opacity-90">Session tailored to {targetRole} role at {selectedCompany}.</p>
                   </div>
                   <div className="flex gap-4 w-full md:w-auto">
                     <button

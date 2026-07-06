@@ -257,7 +257,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Your interview history becomes your advantage.</h2>
               <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">We don&apos;t just record sessions; we build a knowledge graph of your professional growth.</p>
             </div>
-            <div className="relative bg-white border border-outline-variant rounded-[32px] p-12 overflow-hidden min-h-[400px] flex items-center justify-center">
+            <div className="relative bg-white border border-outline-variant rounded-[32px] p-12 overflow-hidden flex items-center justify-center">
               {/* Conceptual Graph Nodes */}
               <div className="relative flex flex-col md:flex-row items-center gap-8 z-10">
                 <div className="flex flex-col items-center gap-3">
@@ -334,44 +334,6 @@ export default function Home() {
                 <p className="text-[11px] font-bold text-on-surface-variant mb-4 uppercase tracking-wider">INTERVIEW STREAK</p>
                 <span className="text-[64px] font-extrabold text-primary leading-none">12</span>
                 <p className="font-semibold text-sm mt-2 text-on-surface">DAYS IN A ROW</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-32 bg-surface">
-          <div className="max-w-container-max mx-auto px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white p-8 rounded-[20px] border border-outline-variant shadow-sm flex flex-col justify-between">
-                <p className="text-base mb-8 italic text-on-surface-variant">&quot;The AI actually called out that I repeated the same mistake I made in my interview three days ago. It felt like having a real mentor.&quot;</p>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-surface-variant flex items-center justify-center text-secondary font-bold">AR</div>
-                  <div>
-                    <p className="font-bold text-sm">Alex Rivera</p>
-                    <p className="text-xs text-on-surface-variant">Frontend Developer @ Vercel</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-8 rounded-[20px] border border-outline-variant shadow-sm flex flex-col justify-between">
-                <p className="text-base mb-8 italic text-on-surface-variant">&quot;Preparing for FAANG was stressful until I started using the Memory Agent. The readiness scores are scary accurate.&quot;</p>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-surface-variant flex items-center justify-center text-secondary font-bold">SC</div>
-                  <div>
-                    <p className="font-bold text-sm">Sarah Chen</p>
-                    <p className="text-xs text-on-surface-variant">SDE Candidate</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-8 rounded-[20px] border border-outline-variant shadow-sm flex flex-col justify-between">
-                <p className="text-base mb-8 italic text-on-surface-variant">&quot;As a student, the feedback on my communication skills was a game-changer. I landed my first internship in 3 weeks.&quot;</p>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-surface-variant flex items-center justify-center text-secondary font-bold">MT</div>
-                  <div>
-                    <p className="font-bold text-sm">Marcus Thorne</p>
-                    <p className="text-xs text-on-surface-variant">Computer Science Student</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
