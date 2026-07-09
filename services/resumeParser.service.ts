@@ -1,6 +1,6 @@
 import "server-only";
 
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 import { logger } from "@/lib/utils/logger";
 
 export interface ResumeParseResult {
@@ -20,10 +20,8 @@ export function cleanExtractedText(rawText: string): string {
 }
 
 export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult> {
-  const parser = new PDFParse({ data: buffer });
-
   try {
-    const result = await parser.getText();
+    const result = await pdf(buffer);
     const rawText = cleanExtractedText(result.text);
 
     if (!rawText) {
@@ -34,7 +32,7 @@ export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult>
 
     return {
       rawText,
-      pageCount: result.total,
+      pageCount: result.numpages,
       charactersExtracted: rawText.length,
     };
   } catch (error) {
@@ -54,8 +52,6 @@ export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult>
 
     logger.error("Resume PDF parse failed", { error: message });
     throw new ResumeParseError("Unable to extract text from the uploaded PDF");
-  } finally {
-    await parser.destroy();
   }
 }
 

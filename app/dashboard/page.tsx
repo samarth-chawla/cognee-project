@@ -131,15 +131,6 @@ export default function DashboardPage() {
 
   // Check locks
   const hasHistory = totalInterviews > 0;
-  const isChartsUnlocked = totalInterviews >= 3;
-  const isMemoryUnlocked = totalInterviews >= 3;
-
-  const StatLock = ({ req }: { req: number }) => (
-    <div className="flex flex-col items-center justify-center mt-2 py-2">
-      <span className="material-symbols-outlined text-outline text-[20px] mb-1">lock</span>
-      <p className="text-[10px] text-on-surface-variant font-medium">Unlock at {req}</p>
-    </div>
-  );
 
   // Removed separate empty state block to render main dashboard for 0 interviews
 
@@ -240,35 +231,27 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-md">
               <div className="p-4 rounded-2xl bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">READINESS</p>
-                {readinessScore !== null && totalInterviews >= 3 ? (
-                  <h3 className="text-xl font-extrabold text-on-surface">{readinessScore}%</h3>
-                ) : <StatLock req={3} />}
+                <h3 className="text-xl font-extrabold text-on-surface">{readinessScore !== null ? `${readinessScore}%` : "—"}</h3>
               </div>
 
               <div className="p-4 rounded-2xl bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">TECHNICAL</p>
-                {technicalScore !== null && totalInterviews >= 3 ? (
-                  <h3 className="text-xl font-extrabold text-on-surface">{technicalScore}%</h3>
-                ) : <StatLock req={3} />}
+                <h3 className="text-xl font-extrabold text-on-surface">{technicalScore !== null ? `${technicalScore}%` : "—"}</h3>
               </div>
 
               <div className="p-4 rounded-2xl bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">COMMUNICATION</p>
-                {communicationScore !== null && totalInterviews >= 3 ? (
-                  <h3 className="text-xl font-extrabold text-on-surface">{communicationScore}%</h3>
-                ) : <StatLock req={3} />}
+                <h3 className="text-xl font-extrabold text-on-surface">{communicationScore !== null ? `${communicationScore}%` : "—"}</h3>
               </div>
 
               <div className="p-4 rounded-2xl bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">CONFIDENCE</p>
-                {confidenceScore !== null && totalInterviews >= 3 ? (
-                  <h3 className="text-xl font-extrabold text-on-surface">{confidenceScore}%</h3>
-                ) : <StatLock req={3} />}
+                <h3 className="text-xl font-extrabold text-on-surface">{confidenceScore !== null ? `${confidenceScore}%` : "—"}</h3>
               </div>
             </div>
 
             {/* AI Memory Card */}
-            {isMemoryUnlocked && hasMemory ? (
+            {hasMemory ? (
               <div className="p-xl rounded-[24px] bg-[#F9F9FC] border border-outline-variant/20 relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row gap-lg items-center">
                   <div className="md:w-1/3 text-center md:text-left">
@@ -309,34 +292,17 @@ export default function DashboardPage() {
             ) : (
               <div className="p-xl rounded-[24px] bg-[#F9F9FC] border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                  <span className="material-symbols-outlined text-outline">lock</span>
+                  <span className="material-symbols-outlined text-outline">smart_toy</span>
                 </div>
-                <h3 className="text-base font-bold text-on-surface mb-2 flex items-center gap-2"><span className="text-xl">🔒</span> AI Memory</h3>
-                <p className="text-sm text-on-surface-variant mb-6 w-full max-w-[400px] leading-relaxed mx-auto">The AI builds long-term memory after multiple interviews.<br />Complete 3 interviews to unlock personalized coaching.</p>
-                <div className="w-full max-w-[300px] bg-white h-2.5 rounded-full overflow-hidden shadow-inner mx-auto">
-                  <div className="bg-[#240A8A] h-full rounded-full" style={{ width: `${Math.min(100, (totalInterviews / 3) * 100)}%` }}></div>
-                </div>
-                <p className="text-[10px] font-semibold text-on-surface-variant mt-2">{totalInterviews} / 3 Interviews</p>
+                <h3 className="text-base font-bold text-on-surface mb-2 flex items-center gap-2">AI Memory</h3>
+                <p className="text-sm text-on-surface-variant mb-6 w-full max-w-[400px] leading-relaxed mx-auto">No memory facts generated yet.<br />Complete an interview to generate insights.</p>
               </div>
             )}
 
             {/* Progress Chart */}
-            {isChartsUnlocked ? (
-              <div className="p-xl rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex items-center justify-center min-h-[200px]">
-                <p className="text-on-surface-variant text-sm font-medium">Charts available in Reports</p>
-              </div>
-            ) : (
-              <div className="p-xl rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center min-h-[220px]">
-                <div className="w-10 h-10 bg-[#F5F5FA] rounded-md flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-outline">bar_chart</span>
-                </div>
-                <h3 className="text-base font-bold text-on-surface mb-2 flex items-center gap-2"><span className="text-xl">🔒</span> Interview Progress</h3>
-                <p className="text-sm text-on-surface-variant mb-6 w-full max-w-[400px] mx-auto">Complete at least 3 interviews to unlock your performance trends.</p>
-                <div className="w-full max-w-[200px] bg-[#F5F5FA] h-2.5 rounded-full overflow-hidden shadow-inner mx-auto">
-                  <div className="bg-[#240A8A] h-full rounded-full" style={{ width: `${Math.min(100, (totalInterviews / 3) * 100)}%` }}></div>
-                </div>
-              </div>
-            )}
+            <div className="p-xl rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex items-center justify-center min-h-[200px]">
+              <p className="text-on-surface-variant text-sm font-medium">Charts available in Reports</p>
+            </div>
 
             {/* Recent Interviews */}
             <div className="bg-white border border-outline-variant/20 rounded-[24px] overflow-hidden shadow-sm">
@@ -381,19 +347,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Personalized Recommendations Lock */}
-            <div className="p-6 rounded-2xl bg-white border border-outline-variant/20 shadow-sm flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className="material-symbols-outlined text-outline text-[24px]">lock</span>
-                <div>
-                  <h3 className="text-sm font-bold text-on-surface">Personalized Recommendations</h3>
-                  <p className="text-xs text-on-surface-variant mt-1">Unlock expert tailored learning paths by completing 3 interviews.</p>
-                </div>
-              </div>
-              <div className="w-24 bg-[#F5F5FA] h-2 rounded-full overflow-hidden shrink-0">
-                <div className="bg-[#7373C3] h-full rounded-full" style={{ width: `${Math.min(100, (totalInterviews / 3) * 100)}%` }}></div>
-              </div>
-            </div>
+
 
           </div>
 
