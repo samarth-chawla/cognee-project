@@ -10,6 +10,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 
 import { UserSync } from "@/components/auth/UserSync";
+import { Toaster } from "react-hot-toast";
 
 import "@fontsource-variable/material-symbols-outlined";
 import "./globals.css";
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ClerkProvider>
           <UserSync />
+          <Toaster position="bottom-right" />
           {children}
           <Analytics />
         </ClerkProvider>

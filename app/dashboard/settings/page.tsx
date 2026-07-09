@@ -8,6 +8,8 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { API } from "@/lib/utils/constants";
 import type { AIProvider, Report } from "@/types";
 import { computeStreak } from "@/lib/utils/memoryInsights";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 const EXPERIENCE_OPTIONS = ["0-2 Years", "3-5 Years", "6-10 Years", "10+ Years"];
 const COMPANY_OPTIONS = ["Google", "Amazon", "Microsoft", "Meta", "NVIDIA"];
@@ -141,8 +143,9 @@ export default function SettingsPage() {
       const j = await res.json();
       if (!j.success) throw new Error(j.message || "Failed to save profile");
       setProfileSaveState("saved");
+      toast.success("Profile saved");
     } catch (e) {
-      setProfileError(e instanceof Error ? e.message : "Failed to save profile");
+      toast.error(e instanceof Error ? e.message : "Failed to save profile");
       setProfileSaveState("error");
     } finally {
       setSavingProfile(false);
@@ -162,8 +165,9 @@ export default function SettingsPage() {
       const j = await res.json();
       if (!j.success) throw new Error(j.message || "Failed to save preferences");
       setPrefsSaveState("saved");
+      toast.success("Preferences saved");
     } catch (e) {
-      setPrefsError(e instanceof Error ? e.message : "Failed to save preferences");
+      toast.error(e instanceof Error ? e.message : "Failed to save preferences");
       setPrefsSaveState("error");
     } finally {
       setSavingPrefs(false);
@@ -193,7 +197,9 @@ export default function SettingsPage() {
       setResetState("done");
       setMemoryNodeCount(0);
       setConfirmResetOpen(false);
+      toast.success("Memory reset successfully");
     } catch {
+      toast.error("Failed to reset memory");
       setResetState("error");
     } finally {
       setResetting(false);
@@ -216,8 +222,10 @@ export default function SettingsPage() {
       
       setDeleteState("done");
       setConfirmDeleteOpen(false);
+      toast.success("Account data deleted");
       window.location.href = "/dashboard";
     } catch {
+      toast.error("Failed to delete account data");
       setDeleteState("error");
     } finally {
       setDeletingData(false);
@@ -281,7 +289,7 @@ export default function SettingsPage() {
             <div
               role="dialog"
               aria-modal="true"
-              className="rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-6 max-w-sm w-full"
+              className="rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-6 "
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-11 h-11 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
@@ -291,7 +299,6 @@ export default function SettingsPage() {
               <p className="text-sm text-on-surface-variant mt-2">
                 This permanently deletes all your interviews, reports, and AI memory. Your account and profile settings will remain. This action cannot be undone.
               </p>
-              {deleteState === "error" && <p className="text-xs text-error-red mt-2 font-bold">Failed to delete account data.</p>}
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <button
                   onClick={() => setConfirmDeleteOpen(false)}
@@ -458,10 +465,9 @@ export default function SettingsPage() {
                               });
                               const j = await res.json();
                               if (!res.ok || !j.success) throw new Error(j.error || "Failed to upload resume");
-                              setProfileSaveState("saved");
+                              toast.success("Resume uploaded");
                             } catch (err: any) {
-                              setProfileError(err.message || "Failed to upload resume");
-                              setProfileSaveState("error");
+                              toast.error(err.message || "Failed to upload resume");
                             } finally {
                               setSavingProfile(false);
                             }
@@ -481,8 +487,6 @@ export default function SettingsPage() {
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
                   </button>
-                  {profileSaveState === "saved" && <span className="text-xs font-bold text-success-green">Saved</span>}
-                  {profileSaveState === "error" && <span className="text-xs font-bold text-error-red">{profileError}</span>}
                 </div>
               </section>
             )}
@@ -513,8 +517,6 @@ export default function SettingsPage() {
                     />
                   </div>
 
-
-
                   <div className="bg-white border border-outline-variant/30 rounded-2xl p-6 space-y-4 shadow-sm">
                     <label className="text-[10px] text-on-surface-variant uppercase tracking-wider">Preferred Difficulty</label>
                     <div className="flex gap-2">
@@ -533,8 +535,6 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </div>
-
-
 
                   <div className="bg-white border border-outline-variant/30 rounded-2xl p-6 space-y-4 shadow-sm md:col-span-2">
                     <label className="text-[10px] text-on-surface-variant uppercase tracking-wider">Target Companies</label>
@@ -583,13 +583,9 @@ export default function SettingsPage() {
                   >
                     {savingPrefs ? "Saving..." : "Save Changes"}
                   </button>
-                  {prefsSaveState === "saved" && <span className="text-xs font-bold text-success-green">Saved</span>}
-                  {prefsSaveState === "error" && <span className="text-xs font-bold text-error-red">{prefsError}</span>}
                 </div>
               </section>
             )}
-
-
 
             {/* AI Memory Settings Section */}
             {activeTab === "memory" && (

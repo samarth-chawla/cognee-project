@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 
 const setupSchema = z.object({
   company: z.string().min(1),
@@ -33,6 +34,7 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { ROUTES } from "@/lib/utils/constants";
 import Sidebar from "@/components/common/Sidebar";
 import VoiceInterview from "@/components/interview/VoiceInterview";
+import { toast } from "react-hot-toast";
 
 export default function InterviewPage() {
   const router = useRouter();
@@ -47,10 +49,12 @@ export default function InterviewPage() {
   const [difficulty, setDifficulty] = useState("Mid-Level");
   const [interviewType, setInterviewType] = useState("Technical");
   const [jobDescription, setJobDescription] = useState("");
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   // Data Fetching states
   const [profileData, setProfileData] = useState<any>(null);
   const [insightsData, setInsightsData] = useState<any>(null);
+  const [usageInfo, setUsageInfo] = useState<{ totalUsed: number; maxUses: number; remaining: number; isLimitReached: boolean } | null>(null);
   const [setupLoading, setSetupLoading] = useState(true);
 
   useEffect(() => {
@@ -89,6 +93,12 @@ export default function InterviewPage() {
               setInsightsData(Array.isArray(memJson.data) ? memJson.data : memJson.data?.nodes || []);
             }
           }
+          
+          const usageRes = await fetch("/api/user/usage");
+          const usageJson = await usageRes.json();
+          if (usageJson.success) {
+            setUsageInfo(usageJson.data);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -98,6 +108,16 @@ export default function InterviewPage() {
     }
     fetchSetupData();
   }, [setTargetRole]);
+
+  useEffect(() => {
+    if (error) {
+      if (error === "INTERVIEW_LIMIT_REACHED") {
+        toast.error("You have reached the monthly interview limit.");
+      } else {
+        toast.error(error);
+      }
+    }
+  }, [error]);
 
   const handleStart = async () => {
     const result = setupSchema.safeParse({
@@ -124,6 +144,58 @@ export default function InterviewPage() {
 
     await start(payload);
   };
+
+  const cancelModal =
+    isCancelModalOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6"
+            onClick={() => setIsCancelModalOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-6 "
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-11 h-11 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-error-red">warning</span>
+              </div>
+              <h2 className="text-xl font-bold text-on-surface">Cancel Interview?</h2>
+              <p className="text-sm text-on-surface-variant mt-2">
+                Are you sure you want to cancel? This will count as 1 used interview out of your monthly limit.
+              </p>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setIsCancelModalOpen(false)}
+                  className="px-6 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-semibold text-on-surface-variant hover:border-error-red/50 hover:text-error-red transition-all cursor-pointer"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsCancelModalOpen(false);
+                    await cancel();
+                    try {
+                      const usageRes = await fetch("/api/user/usage");
+                      const usageJson = await usageRes.json();
+                      if (usageJson.success) {
+                        setUsageInfo(usageJson.data);
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-error-red text-white text-sm font-semibold hover:bg-error-red/90 transition-colors active:scale-95 shadow-md shadow-error-red/20 cursor-pointer"
+                >
+                  Confirm Cancel
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   // State 1: Setup Screen
   if (!current) {
@@ -168,10 +240,10 @@ export default function InterviewPage() {
               <p className="w-full text-sm sm:text-base text-on-surface-variant ">
                 ARIA is analyzing your target role (<span className="font-semibold text-primary">{targetRole}</span>) and past performance memory to compile the optimal session syllabus.
               </p>
-              <button
-                onClick={() => cancel()}
-                className="mt-6 px-6 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-semibold text-on-surface-variant hover:border-error-red/50 hover:text-error-red transition-all cursor-pointer"
-              >
+                <button
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="px-6 py-2 rounded-xl border border-error-red text-error-red hover:bg-error-red hover:text-white font-bold transition-colors shadow-sm active:scale-95 text-xs uppercase tracking-wider cursor-pointer mt-4"
+                >
                 Cancel
               </button>
             </div>
@@ -353,7 +425,8 @@ export default function InterviewPage() {
                     </button>
                     <button
                       onClick={handleStart}
-                      className="flex-1 md:flex-initial px-6 py-3 bg-white text-primary hover:bg-surface-container font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer text-xs"
+                      disabled={usageInfo?.isLimitReached}
+                      className="flex-1 md:flex-initial px-6 py-3 bg-white text-primary hover:bg-surface-container font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-xs"
                     >
                       <span className="material-symbols-outlined text-[18px]">mic</span>
                       Start Interview
@@ -368,6 +441,34 @@ export default function InterviewPage() {
                   <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm animate-pulse h-64"></div>
                 ) : (
                   <>
+                    {/* Usage Limits Card */}
+                    {usageInfo && (
+                      <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm flex flex-col items-center text-center">
+                        <div className="w-full flex items-center justify-between mb-6">
+                          <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase">MONTHLY USAGE</p>
+                        </div>
+                        <div className="relative w-28 h-28 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle className="text-[#F5F5FA]" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" strokeWidth="8"></circle>
+                            <circle 
+                              className={usageInfo.isLimitReached ? "text-error-red" : "text-[#240A8A]"} 
+                              cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" 
+                              strokeDasharray="301.6" 
+                              strokeDashoffset={301.6 - (301.6 * Math.min(usageInfo.totalUsed, usageInfo.maxUses)) / usageInfo.maxUses} 
+                              strokeWidth="8" strokeLinecap="round"
+                            ></circle>
+                          </svg>
+                          <div className="absolute flex flex-col items-center">
+                            <span className="text-2xl font-extrabold">{usageInfo.totalUsed}/{usageInfo.maxUses}</span>
+                            <span className="text-[10px] text-on-surface-variant font-medium mt-1">Interviews</span>
+                          </div>
+                        </div>
+                        <p className={`mt-6 text-xs font-medium leading-relaxed ${usageInfo.isLimitReached ? "text-error-red" : "text-on-surface-variant"}`}>
+                          {usageInfo.isLimitReached ? "You have reached your limit." : `You have ${usageInfo.remaining} uses remaining this month.`}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Profile Card */}
                     <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm">
                       <h2 className="text-[11px] font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Candidate Profile</h2>
@@ -463,6 +564,7 @@ export default function InterviewPage() {
             </div>
           )}
           </div>
+          {cancelModal}
         </main>
       </div>
     );

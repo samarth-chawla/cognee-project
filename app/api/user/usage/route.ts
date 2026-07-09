@@ -1,43 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db/prisma";
-import { LIMITS } from "@/lib/config/limits";
-import { getCurrentMonthInterviewCount } from "@/services/usage.service";
-import { unauthorized } from "@/lib/utils/api";
+import { prisma } from "@/lib/db";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId: clerkId } = await auth();
-
     if (!clerkId) {
-      return unauthorized();
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true },
-    });
-
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    const used = await getCurrentMonthInterviewCount(user.id);
-    const limit = LIMITS.MAX_INTERVIEWS_PER_MONTH;
-    const remaining = Math.max(0, limit - used);
+    const totalUsed = await prisma.interview.count({
+      where: { userId: user.id },
+    });
 
-    const now = new Date();
-    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const MAX_USES = 3;
 
     return NextResponse.json({
-      used,
-      remaining,
-      limit,
-      month: monthStr,
+      success: true,
+      data: {
+        totalUsed,
+        maxUses: MAX_USES,
+        remaining: Math.max(0, MAX_USES - totalUsed),
+        isLimitReached: totalUsed >= MAX_USES,
+      },
     });
   } catch (error: any) {
+    console.error("Error fetching usage:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

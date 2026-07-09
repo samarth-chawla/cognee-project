@@ -226,7 +226,7 @@ export async function createInterviewSession(params: CreateInterviewParams) {
       where: {
         userId,
         createdAt: { gte: startOfMonth, lte: endOfMonth },
-        status: { in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED] }
+        status: { in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED, InterviewStatus.CANCELLED] }
       }
     });
 

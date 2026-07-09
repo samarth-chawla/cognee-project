@@ -17,7 +17,7 @@ export async function getCurrentMonthInterviewCount(userId: string): Promise<num
         lte: endOfMonth,
       },
       status: {
-        in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED],
+        in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED, InterviewStatus.CANCELLED],
       },
     },
   });
