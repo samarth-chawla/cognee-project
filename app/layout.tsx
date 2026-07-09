@@ -25,8 +25,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Interview Memory Agent",
-  description: "AI mock interviews with long-term memory, powered by Cognee.",
+  title: "ARIA | AI Interview Agent",
+  description: "AI mock interviews with long-term memory. ARIA tracks your performance and tailors questions to help you land your dream job.",
+  openGraph: {
+    title: "ARIA | AI Interview Agent",
+    description: "AI mock interviews with long-term memory. ARIA tracks your performance and tailors questions to help you land your dream job.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ARIA | AI Interview Agent",
+    description: "AI mock interviews with long-term memory. ARIA tracks your performance and tailors questions to help you land your dream job.",
+  },
+  metadataBase: new URL("https://interview-memory-agent.vercel.app"),
 };
 
 export default function RootLayout({

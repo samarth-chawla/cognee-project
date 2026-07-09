@@ -53,19 +53,6 @@ export async function POST(request: NextRequest) {
       return failure("User not found", 404);
     }
 
-    const canGenerate = await canGenerateInterview(user.id);
-    if (!canGenerate) {
-      return new Response(JSON.stringify({
-        success: false,
-        code: "INTERVIEW_LIMIT_REACHED",
-        message: "You have reached the monthly interview limit.",
-        remaining: 0
-      }), {
-        status: 429,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
     const body = await request.json();
     
     const parsed = StartInterviewSchema.safeParse(body);
@@ -91,6 +78,17 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
+    if (error.message === "INTERVIEW_LIMIT_REACHED") {
+      return new Response(JSON.stringify({
+        success: false,
+        code: "INTERVIEW_LIMIT_REACHED",
+        message: "You have reached the monthly interview limit.",
+        remaining: 0
+      }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     if (error.message === "PROFILE_NOT_FOUND") {
       return failure("Profile not found", 404);
     }

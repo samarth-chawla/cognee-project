@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { Difficulty, InterviewStatus } from "@prisma/client";
+import { LIMITS } from "@/lib/config/limits";
 import { complete, parseJSON } from "@/lib/ai";
 import {
   buildEvaluationPrompt,
@@ -216,6 +217,23 @@ export async function createInterviewSession(params: CreateInterviewParams) {
 
 
   return prisma.$transaction(async (tx) => {
+    // Check monthly limit inside the transaction to prevent race conditions
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    const count = await tx.interview.count({
+      where: {
+        userId,
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+        status: { in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED] }
+      }
+    });
+
+    if (count >= LIMITS.MAX_INTERVIEWS_PER_MONTH) {
+      throw new Error("INTERVIEW_LIMIT_REACHED");
+    }
+
     let jobDescriptionId: string | undefined;
 
     if (jobDescription) {

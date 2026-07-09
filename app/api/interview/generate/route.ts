@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to generate interview questions" },
+      { success: false, error: "Failed to generate interview questions" },
       { status: 500 }
     );
   }
