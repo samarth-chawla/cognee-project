@@ -105,24 +105,24 @@ export default function DashboardPage() {
   const totalInterviews = historyData.length;
   const averageScore = analyticsData?.averageScore || (totalInterviews > 0 ? Math.round(historyData.reduce((acc, h) => acc + (h.evaluation?.overallScore || 0), 0) / totalInterviews) : 0);
 
-  const getScore = (name: string) => {
+  const getScore = (key: string) => {
     if (!historyData || historyData.length === 0) return null;
     let total = 0;
     let count = 0;
-    historyData.forEach(h => {
-      const c = h.evaluation?.criteria?.find((crit: any) => crit.name.toLowerCase().includes(name.toLowerCase()));
-      if (c) {
-        total += c.score;
+    historyData.forEach((h: any) => {
+      const score = h.evaluation?.[key];
+      if (typeof score === 'number') {
+        total += score;
         count++;
       }
     });
     return count > 0 ? Math.round(total / count) : null;
   };
 
-  const readinessScore = getScore("readiness") || averageScore;
-  const technicalScore = getScore("technical");
-  const communicationScore = getScore("communication");
-  const confidenceScore = getScore("confidence");
+  const readinessScore = getScore("readinessScore") || averageScore;
+  const technicalScore = getScore("technicalScore");
+  const communicationScore = getScore("communicationScore");
+  const confidenceScore = getScore("confidenceScore");
 
   let currentStreak = totalInterviews > 0 ? 1 : 0; // Backend doesn't return streak, mock 1 if history exists
 
@@ -135,9 +135,21 @@ export default function DashboardPage() {
   // Removed separate empty state block to render main dashboard for 0 interviews
 
   const memoryNodes = memoryData?.nodes || [];
-  const strengths = memoryNodes.filter((n: any) => n.type === "strength" || n.label === "strength").slice(0, 3);
-  const weaknesses = memoryNodes.filter((n: any) => n.type === "weakness" || n.label === "weakness").slice(0, 3);
-  const hasMemory = memoryNodes.length > 0;
+  let strengths = memoryNodes.filter((n: any) => n.type === "strength" || n.label === "strength").slice(0, 3);
+  let weaknesses = memoryNodes.filter((n: any) => n.type === "weakness" || n.label === "weakness").slice(0, 3);
+
+  if (strengths.length === 0 && weaknesses.length === 0 && historyData.length > 0) {
+    const recentReport = historyData[0]?.evaluation;
+    if (recentReport) {
+      strengths = (recentReport.strengths || []).slice(0, 3).map((s: string) => ({ text: s }));
+      weaknesses = (recentReport.weaknesses || []).slice(0, 3).map((w: string) => ({ text: w }));
+    }
+  }
+
+  const chartData = historyData.length > 0 ? historyData.slice(0, 7).reverse().map((h: any) => h.evaluation?.overallScore || 0) : [];
+  const trend = chartData.length > 1 ? chartData[chartData.length - 1] - chartData[chartData.length - 2] : null;
+
+  const hasMemory = strengths.length > 0 || weaknesses.length > 0;
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-on-surface font-body-md">
@@ -201,15 +213,15 @@ export default function DashboardPage() {
               </button>
 
               <button
-                onClick={() => router.push(ROUTES.interview)}
+                onClick={() => router.push('/dashboard/settings')}
                 className="flex items-center gap-4 p-5 rounded-[20px] bg-[#F5F5FA] border border-transparent hover:border-outline-variant/30 transition-all active:scale-95 group text-left cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-xl bg-[#E8E8F8] flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[#7373C3] text-[20px] group-hover:scale-110 transition-transform">play_arrow</span>
+                  <span className="material-symbols-outlined text-[#7373C3] text-[20px] group-hover:rotate-45 transition-transform">settings</span>
                 </div>
                 <div>
-                  <p className="text-base font-bold text-on-surface">Continue<br />Practice</p>
-                  <p className="text-on-surface-variant text-[10px] mt-1 font-semibold">Review last session</p>
+                  <p className="text-base font-bold text-on-surface">Update<br />Profile</p>
+                  <p className="text-on-surface-variant text-[10px] mt-1 font-semibold">Adjust role & goals</p>
                 </div>
               </button>
 
@@ -227,8 +239,11 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Top Stat Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-md">
+            {/* Dashboard Content */}
+            {hasHistory ? (
+              <>
+                {/* Top Stat Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-md">
               <div className="p-4 rounded-2xl bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center">
                 <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase mb-1">READINESS</p>
                 <h3 className="text-xl font-extrabold text-on-surface">{readinessScore !== null ? `${readinessScore}%` : "—"}</h3>
@@ -250,58 +265,107 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* AI Memory Card */}
-            {hasMemory ? (
-              <div className="p-xl rounded-[24px] bg-[#F9F9FC] border border-outline-variant/20 relative overflow-hidden">
-                <div className="relative z-10 flex flex-col md:flex-row gap-lg items-center">
-                  <div className="md:w-1/3 text-center md:text-left">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto md:mx-0 shadow-sm mb-4">
-                      <span className="material-symbols-outlined text-primary">smart_toy</span>
+            {/* Two Column Grid for Memory and Chart */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+              
+              {/* AI Memory Card (Half Width) */}
+              <div className="p-6 rounded-[24px] bg-[#F9F9FC] border border-outline-variant/20 flex flex-col h-full relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <span className="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
                     </div>
-                    <h3 className="text-lg font-bold mb-2">AI Memory</h3>
-                    <p className="text-on-surface-variant text-xs leading-relaxed max-w-xs">Based on your recent interviews, here is your personalized profile.</p>
+                    <div>
+                      <h3 className="text-base font-bold">AI Memory</h3>
+                      <p className="text-on-surface-variant text-[10px] uppercase tracking-wider font-semibold">Personalized Profile</p>
+                    </div>
                   </div>
-                  <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-md w-full">
-                    {strengths.length > 0 && (
-                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/20">
-                        <p className="text-[10px] font-bold text-success-green mb-3 flex items-center gap-1 tracking-wider uppercase">
-                          <span className="material-symbols-outlined text-[14px]">check_circle</span> Strengths
-                        </p>
-                        <ul className="space-y-2 text-xs">
-                          {strengths.map((s: any, i: number) => (
-                            <li key={i} className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-success-green shrink-0"></span> <span className="line-clamp-2">{s.text || s.id}</span></li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {weaknesses.length > 0 && (
-                      <div className="bg-white p-4 rounded-2xl shadow-sm border border-outline-variant/20">
-                        <p className="text-[10px] font-bold text-[#D95B5B] mb-3 flex items-center gap-1 tracking-wider uppercase">
-                          <span className="material-symbols-outlined text-[14px]">warning</span> Focus Areas
-                        </p>
-                        <ul className="space-y-2 text-xs">
-                          {weaknesses.map((w: any, i: number) => (
-                            <li key={i} className="flex items-start gap-2"><span className="w-1.5 h-1.5 mt-1 rounded-full bg-[#D95B5B] shrink-0"></span> <span className="line-clamp-2">{w.text || w.id}</span></li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                  <button onClick={() => router.push('/dashboard/memory')} className="text-xs font-bold text-primary hover:bg-primary/5 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 cursor-pointer">
+                    View All <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="p-xl rounded-[24px] bg-[#F9F9FC] border border-outline-variant/20 flex flex-col items-center justify-center text-center">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                  <span className="material-symbols-outlined text-outline">smart_toy</span>
-                </div>
-                <h3 className="text-base font-bold text-on-surface mb-2 flex items-center gap-2">AI Memory</h3>
-                <p className="text-sm text-on-surface-variant mb-6 w-full max-w-[400px] leading-relaxed mx-auto">No memory facts generated yet.<br />Complete an interview to generate insights.</p>
-              </div>
-            )}
 
-            {/* Progress Chart */}
-            <div className="p-xl rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex items-center justify-center min-h-[200px]">
-              <p className="text-on-surface-variant text-sm font-medium">Charts available in Reports</p>
+                <div className="flex-1 flex flex-col gap-4">
+                  {hasMemory ? (
+                    <>
+                      {strengths.length > 0 && (
+                        <div className="bg-white p-3 rounded-2xl shadow-sm border border-outline-variant/20">
+                          <p className="text-[10px] font-bold text-success-green mb-2 flex items-center gap-1 tracking-wider uppercase">
+                            <span className="material-symbols-outlined text-[14px]">check_circle</span> Strengths
+                          </p>
+                          <ul className="space-y-1.5 text-xs">
+                            {strengths.slice(0, 2).map((s: any, i: number) => (
+                              <li key={i} className="flex items-start gap-2"><span className="w-1 h-1 mt-1.5 rounded-full bg-success-green shrink-0"></span> <span className="line-clamp-1">{s.text || s.id}</span></li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {weaknesses.length > 0 && (
+                        <div className="bg-white p-3 rounded-2xl shadow-sm border border-outline-variant/20">
+                          <p className="text-[10px] font-bold text-[#D95B5B] mb-2 flex items-center gap-1 tracking-wider uppercase">
+                            <span className="material-symbols-outlined text-[14px]">warning</span> Focus Areas
+                          </p>
+                          <ul className="space-y-1.5 text-xs">
+                            {weaknesses.slice(0, 2).map((w: any, i: number) => (
+                              <li key={i} className="flex items-start gap-2"><span className="w-1 h-1 mt-1.5 rounded-full bg-[#D95B5B] shrink-0"></span> <span className="line-clamp-1">{w.text || w.id}</span></li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+                      <span className="material-symbols-outlined text-outline-variant text-[32px] mb-2">memory</span>
+                      <p className="text-sm text-on-surface-variant max-w-[200px]">Complete an interview to generate insights.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Chart (Half Width) */}
+              <div className="p-6 rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex flex-col justify-between h-full group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#F5F5FA] rounded-full flex items-center justify-center shadow-sm">
+                      <span className="material-symbols-outlined text-[#240A8A] text-[20px]">trending_up</span>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold">Progress</h3>
+                      {trend !== null ? (
+                        <p className={`text-[10px] uppercase tracking-wider font-semibold ${trend >= 0 ? 'text-[#240A8A]' : 'text-[#D95B5B]'}`}>
+                          {trend >= 0 ? '+' : ''}{trend}% this week
+                        </p>
+                      ) : (
+                        <p className="text-[#240A8A] text-[10px] uppercase tracking-wider font-semibold">Latest Score</p>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => router.push('/dashboard/reports')} className="text-xs font-bold text-[#240A8A] hover:bg-[#240A8A]/5 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 cursor-pointer">
+                    Full Report <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </button>
+                </div>
+                
+                <div className="flex-1 flex items-end justify-between gap-1 sm:gap-3 pt-2 h-[120px]">
+                  {chartData.length > 0 ? (
+                    chartData.map((height: number, i: number) => (
+                      <div key={i} className="relative flex-1 group/bar h-full flex flex-col justify-end">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-[#151515] text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                          {height}%
+                        </div>
+                        <div 
+                          className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-80 ${i === chartData.length - 1 ? 'bg-[#240A8A]' : 'bg-[#E8E8F8]'}`} 
+                          style={{ height: `${height}%`, minHeight: '10%' }}
+                        ></div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full flex items-center justify-center h-full">
+                      <p className="text-sm text-on-surface-variant">No data yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
             {/* Recent Interviews */}
@@ -346,8 +410,22 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-
-
+            
+              </>
+            ) : (
+              <div className="p-xl rounded-[24px] bg-white shadow-sm border border-outline-variant/20 flex flex-col items-center justify-center text-center min-h-[400px]">
+                <div className="w-16 h-16 bg-[#F5F5FA] rounded-full flex items-center justify-center mb-6">
+                  <span className="material-symbols-outlined text-[#240A8A] text-[32px]">rocket_launch</span>
+                </div>
+                <h3 className="text-xl font-bold text-on-surface mb-2">No Interview Data Yet</h3>
+                <p className="text-sm text-on-surface-variant mb-8 w-full max-w-[400px] leading-relaxed mx-auto">
+                  You haven't completed any interviews. Start your first practice session to generate your personalized AI profile and performance metrics!
+                </p>
+                <button onClick={() => router.push(ROUTES.interview)} className="bg-[#240A8A] text-white font-bold text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform shadow-lg shadow-primary/20 cursor-pointer">
+                  Start First Interview
+                </button>
+              </div>
+            )}
 
           </div>
 

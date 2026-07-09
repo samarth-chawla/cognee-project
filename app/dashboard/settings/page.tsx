@@ -54,18 +54,12 @@ export default function SettingsPage() {
     voiceEnabled,
     persistentContext,
     gapAnalysis,
-    sessionReminders,
-    weeklyReports,
-    goalAchievements,
     weeklyGoal,
     setProvider,
     setTargetRole,
     setVoiceEnabled,
     setPersistentContext,
     setGapAnalysis,
-    setSessionReminders,
-    setWeeklyReports,
-    setGoalAchievements,
     setWeeklyGoal,
   } = useSettingsStore();
 
@@ -95,6 +89,11 @@ export default function SettingsPage() {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetState, setResetState] = useState<"idle" | "done" | "error">("idle");
+
+  // Delete account (clear data)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deletingData, setDeletingData] = useState(false);
+  const [deleteState, setDeleteState] = useState<"idle" | "done" | "error">("idle");
 
   useEffect(() => {
     fetch("/api/user/profile")
@@ -201,6 +200,30 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!profileData?.user.id) return;
+    setDeletingData(true);
+    setDeleteState("idle");
+    try {
+      await fetch("/api/cognee/forget", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: profileData.user.id }),
+      });
+      const res = await fetch("/api/user/data", { method: "DELETE" });
+      const j = await res.json();
+      if (!j.success) throw new Error(j.error || "Failed to delete data");
+      
+      setDeleteState("done");
+      setConfirmDeleteOpen(false);
+      window.location.href = "/dashboard";
+    } catch {
+      setDeleteState("error");
+    } finally {
+      setDeletingData(false);
+    }
+  };
+
   const streak = computeStreak(reports);
   const displayName = user?.fullName || user?.firstName || profileData?.user.fullName || "Candidate";
   const email = profileData?.user.email ?? "";
@@ -248,6 +271,49 @@ export default function SettingsPage() {
         )
       : null;
 
+  const confirmDeleteDialog =
+    confirmDeleteOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6"
+            onClick={() => !deletingData && setConfirmDeleteOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-11 h-11 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-error-red">delete_forever</span>
+              </div>
+              <h2 className="text-xl font-bold text-on-surface">Delete Account Data?</h2>
+              <p className="text-sm text-on-surface-variant mt-2">
+                This permanently deletes all your interviews, reports, and AI memory. Your account and profile settings will remain. This action cannot be undone.
+              </p>
+              {deleteState === "error" && <p className="text-xs text-error-red mt-2 font-bold">Failed to delete account data.</p>}
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                <button
+                  onClick={() => setConfirmDeleteOpen(false)}
+                  disabled={deletingData}
+                  className="py-3 rounded-xl bg-surface-container text-sm font-semibold text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deletingData}
+                  className="py-3 rounded-xl bg-error-red text-white text-sm font-bold hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {deletingData ? "Deleting..." : "Delete Data"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md flex">
       {/* Sidebar Navigation */}
@@ -279,14 +345,7 @@ export default function SettingsPage() {
               </button>
 
               <h3 className="hidden lg:block text-[10px] font-bold text-on-surface-variant px-4 py-2 uppercase tracking-wider mt-6">App Settings</h3>
-              <button
-                onClick={() => setActiveTab("notifications")}
-                className={`shrink-0 lg:w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-left cursor-pointer ${
-                  activeTab === "notifications" ? "bg-primary/10 text-primary" : "text-on-surface hover:bg-surface-container"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">notifications_active</span> Notifications
-              </button>
+
               <button
                 onClick={() => setActiveTab("memory")}
                 className={`shrink-0 lg:w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all text-left cursor-pointer ${
@@ -530,26 +589,7 @@ export default function SettingsPage() {
               </section>
             )}
 
-            {/* Notifications Section */}
-            {activeTab === "notifications" && (
-              <section className="bg-white border border-outline-variant/30 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
-                <h3 className="text-lg font-bold text-on-surface">Notification Settings</h3>
-                <div className="space-y-4 text-xs font-bold">
-                  <div className="flex items-center justify-between py-2 border-b border-outline-variant/10">
-                    <span className="text-sm font-semibold text-on-surface">Session Reminders</span>
-                    <ToggleSwitch checked={sessionReminders} onChange={setSessionReminders} />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-outline-variant/10">
-                    <span className="text-sm font-semibold text-on-surface">Weekly Progress Reports</span>
-                    <ToggleSwitch checked={weeklyReports} onChange={setWeeklyReports} />
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm font-semibold text-on-surface">Goal Achievements</span>
-                    <ToggleSwitch checked={goalAchievements} onChange={setGoalAchievements} />
-                  </div>
-                </div>
-              </section>
-            )}
+
 
             {/* AI Memory Settings Section */}
             {activeTab === "memory" && (
@@ -614,8 +654,13 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-outline-variant/30 text-xs">
-                <p className="text-on-surface-variant font-medium">Account deletion isn&apos;t available yet — contact support.</p>
-                <button disabled className="text-on-surface-variant/50 font-bold cursor-not-allowed">Delete Account</button>
+                <p className="text-on-surface-variant font-medium">Clear all interview history, reports, and memory.</p>
+                <button 
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  className="px-4 py-2 rounded-lg text-error-red font-bold hover:bg-error-red/10 transition-colors cursor-pointer active:scale-95"
+                >
+                  Delete Account Data
+                </button>
               </div>
             </section>
           </div>
@@ -641,6 +686,7 @@ export default function SettingsPage() {
       </main>
 
       {confirmResetDialog}
+      {confirmDeleteDialog}
     </div>
   );
 }
