@@ -134,7 +134,7 @@ export default function Home() {
         <section className="py-16 border-y border-outline-variant/20 bg-white">
           <div className="max-w-container-max mx-auto px-8 text-center">
             <p className="text-[11px] font-bold text-on-surface-variant mb-10 tracking-widest uppercase">TRUSTED BY ASPIRING DEVELOPERS AND JOB SEEKERS</p>
-            <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-40 grayscale">
+            <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-90">
               <img alt="Google" className="h-8 object-contain" src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"/>
               <img alt="Amazon" className="h-8 object-contain" src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"/>
               <img alt="Microsoft" className="h-8 object-contain" src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg"/>
