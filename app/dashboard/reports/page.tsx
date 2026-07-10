@@ -1,26 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/common/Sidebar";
 import { API, ROUTES } from "@/lib/utils/constants";
 import type { Report } from "@/types";
 import { useSettingsStore } from "@/store/useSettingsStore";
 
 export default function ReportsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReportsPageInner />
+    </Suspense>
+  );
+}
+
+function ReportsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const generateId = searchParams.get("generate");
   const { targetRole } = useSettingsStore();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  // True while we're evaluating a just-finished interview into a report.
+  const [generating, setGenerating] = useState(Boolean(generateId));
 
   useEffect(() => {
-    fetch(API.reports)
-      .then((r) => r.json())
-      .then((j) => setReports(j.data ?? []))
-      .catch((e) => console.error("Failed to load reports", e))
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+
+    async function loadReports() {
+      try {
+        const r = await fetch(API.reports, { cache: "no-store" });
+        const j = await r.json();
+        if (!cancelled) setReports(j.data ?? []);
+      } catch (e) {
+        console.error("Failed to load reports", e);
+      }
+    }
+
+    async function run() {
+      // If arriving from a finished interview, generate its report first.
+      // The eval route is idempotent + de-duplicated with /api/interview/end,
+      // so a background evaluation and this call resolve to the same report.
+      if (generateId) {
+        setGenerating(true);
+        try {
+          await fetch(API.evaluation, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ interviewId: generateId }),
+          });
+        } catch (e) {
+          console.error("Failed to generate report", e);
+        } finally {
+          if (!cancelled) setGenerating(false);
+          // Drop the ?generate param so a refresh doesn't re-trigger.
+          router.replace(ROUTES.reports);
+        }
+      }
+
+      await loadReports();
+      if (!cancelled) setLoading(false);
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generateId]);
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md flex">
@@ -43,7 +92,17 @@ export default function ReportsPage() {
             </p>
           </header>
 
-          {loading ? (
+          {generating ? (
+            <div className="flex flex-col items-center justify-center p-12 bg-white border border-outline-variant/30 rounded-xxl shadow-xl text-center max-w-2xl mx-auto min-h-[300px]">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Generating your report…</h3>
+              <p className="text-sm text-on-surface-variant">
+                We&apos;re analyzing your interview and compiling detailed feedback. This usually takes a few moments.
+              </p>
+            </div>
+          ) : loading ? (
             <div className="flex items-center justify-center p-12 text-sm text-on-surface-variant gap-2">
               <span className="material-symbols-outlined animate-spin">progress_activity</span>
               Loading feedback reports...

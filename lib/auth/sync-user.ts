@@ -86,13 +86,28 @@ export async function syncClerkUserToDatabase(user: ClerkUserLike | UserJSON) {
 }
 
 export async function syncCurrentClerkUserToDatabase() {
-  const user = await currentUser();
+  try {
+    const user = await currentUser();
 
-  if (!user) {
-    return null;
+    if (!user) {
+      return null;
+    }
+
+    return syncClerkUserToDatabase(user);
+  } catch (error) {
+    // A Clerk user can be deleted (e.g. via account deletion) while a stale
+    // client session still triggers a sync. Clerk then returns 404/401 instead
+    // of null — treat those as "not signed in" rather than throwing.
+    if (
+      error &&
+      typeof error === "object" &&
+      "clerkError" in error &&
+      error.clerkError === true
+    ) {
+      return null;
+    }
+    throw error;
   }
-
-  return syncClerkUserToDatabase(user);
 }
 
 type DeletionNotice = {

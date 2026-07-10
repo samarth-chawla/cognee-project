@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
@@ -121,6 +122,21 @@ export default function VoiceInterview({
   const [elapsed, setElapsed] = useState(0);
   const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // End-flow dialog: null → hidden, "confirm" → "End interview?", "report" → "Generate report?"
+  const [endStep, setEndStep] = useState<null | "confirm" | "report">(null);
+  // Guard so the natural-completion redirect fires only once.
+  const navigatedRef = useRef(false);
+
+  // Navigate to the reports page and let it generate the report (with a loading
+  // state) in the background. Clears the in-progress interview first so /interview
+  // shows the setup screen on return.
+  const goToReport = useCallback(() => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+    stop();
+    useInterviewStore.getState().reset();
+    router.push(`${ROUTES.reports}?generate=${interview.id}`);
+  }, [router, stop, interview.id]);
 
   const meta = STATE_META[state] ?? STATE_META.IDLE;
   const isSpeaking =
@@ -179,18 +195,21 @@ export default function VoiceInterview({
     });
   }, [turns]);
 
-  // When evaluation completes, move to the report.
+  // Natural completion: once the candidate answers the last question the agent
+  // moves to THANK_CANDIDATE. Don't make the user wait on the voice screen for
+  // evaluation — play the short closing line, then redirect to the reports page
+  // which generates the report in the background with a loading state.
   useEffect(() => {
-    if (state === "REPORT_READY") {
-      const t = setTimeout(() => {
-        // Clear the in-progress interview so returning to /interview
-        // shows the setup screen instead of a stale VoiceInterview session.
-        useInterviewStore.getState().reset();
-        router.push(ROUTES.reports);
-      }, 1200);
+    if (
+      state === "THANK_CANDIDATE" ||
+      state === "WAIT_FOR_BACKEND" ||
+      state === "EVALUATING" ||
+      state === "REPORT_READY"
+    ) {
+      const t = setTimeout(() => goToReport(), 2500);
       return () => clearTimeout(t);
     }
-  }, [state, router]);
+  }, [state, goToReport]);
 
   const progressLabel = useMemo(() => {
     if (totalQuestions === 0) return "Preparing…";
@@ -198,13 +217,96 @@ export default function VoiceInterview({
     return `Question ${current} of ${totalQuestions}`;
   }, [currentQuestion, totalQuestions]);
 
-  const handleEnd = () => {
+  // "End" button → confirm dialog first (mirrors the cancel flow).
+  const handleEnd = () => setEndStep("confirm");
+
+  // User confirmed ending early → ask whether to generate a report.
+  const handleConfirmEnd = () => setEndStep("report");
+
+  // Early end, generate a report from answers given so far.
+  const handleEndWithReport = () => {
+    setEndStep(null);
+    goToReport();
+  };
+
+  // Early end, no report — just leave the session.
+  const handleEndNoReport = () => {
+    setEndStep(null);
     stop();
     onExit();
   };
 
+  const endDialog =
+    endStep && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6"
+            onClick={() => setEndStep(null)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="rounded-3xl bg-surface border border-outline-variant/30 shadow-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-11 h-11 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-error-red">
+                  {endStep === "confirm" ? "logout" : "assessment"}
+                </span>
+              </div>
+
+              {endStep === "confirm" ? (
+                <>
+                  <h2 className="text-xl font-bold text-on-surface">End interview?</h2>
+                  <p className="text-sm text-on-surface-variant mt-2">
+                    Are you sure you want to end this interview now? You can still get a report on what you&apos;ve answered so far.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                      onClick={() => setEndStep(null)}
+                      className="py-3 rounded-xl bg-surface-container text-sm font-semibold text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 cursor-pointer"
+                    >
+                      Go Back
+                    </button>
+                    <button
+                      onClick={handleConfirmEnd}
+                      className="py-3 rounded-xl bg-error-red text-white text-sm font-bold hover:opacity-90 transition-all active:scale-95 cursor-pointer"
+                    >
+                      End Interview
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold text-on-surface">Generate report?</h2>
+                  <p className="text-sm text-on-surface-variant mt-2">
+                    Do you want a feedback report for this interview? We&apos;ll analyze your answers and take you to the report page.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                      onClick={handleEndNoReport}
+                      className="py-3 rounded-xl bg-surface-container text-sm font-semibold text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 cursor-pointer"
+                    >
+                      No, just exit
+                    </button>
+                    <button
+                      onClick={handleEndWithReport}
+                      className="py-3 rounded-xl bg-primary text-white text-sm font-bold hover:opacity-90 transition-all active:scale-95 cursor-pointer"
+                    >
+                      Yes, generate
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <div className="min-h-screen h-screen bg-surface text-on-surface flex flex-col overflow-hidden">
+      {endDialog}
       {/* Header */}
       <header className="flex items-center justify-between px-4 md:px-gutter h-16 border-b border-outline-variant/30 bg-surface/80 backdrop-blur-md">
         <div className="flex items-center gap-2 md:gap-md">

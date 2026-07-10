@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -55,6 +55,18 @@ export default function InterviewPage() {
   const [profileData, setProfileData] = useState<any>(null);
   const [insightsData, setInsightsData] = useState<any>(null);
   const [usageInfo, setUsageInfo] = useState<{ totalUsed: number; maxUses: number; remaining: number; isLimitReached: boolean; window?: string; windowLabel?: string } | null>(null);
+
+  const refreshUsage = useCallback(async () => {
+    try {
+      const usageRes = await fetch("/api/user/usage", { cache: "no-store" });
+      const usageJson = await usageRes.json();
+      if (usageJson.success) {
+        setUsageInfo(usageJson.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
   const [setupLoading, setSetupLoading] = useState(true);
 
   useEffect(() => {
@@ -94,11 +106,7 @@ export default function InterviewPage() {
             }
           }
           
-          const usageRes = await fetch("/api/user/usage");
-          const usageJson = await usageRes.json();
-          if (usageJson.success) {
-            setUsageInfo(usageJson.data);
-          }
+          await refreshUsage();
         }
       } catch (err) {
         console.error(err);
@@ -116,8 +124,22 @@ export default function InterviewPage() {
       } else {
         toast.error(error);
       }
+      // A new interview was consumed (or blocked) — sync the usage card.
+      refreshUsage();
     }
-  }, [error]);
+  }, [error, refreshUsage]);
+
+  // When an interview ends and we return to the setup screen, refresh the usage
+  // card so it reflects the just-consumed session instantly (no reload needed).
+  const hadInterviewRef = useRef(false);
+  useEffect(() => {
+    if (current) {
+      hadInterviewRef.current = true;
+    } else if (hadInterviewRef.current) {
+      hadInterviewRef.current = false;
+      refreshUsage();
+    }
+  }, [current, refreshUsage]);
 
   const handleStart = async () => {
     const result = setupSchema.safeParse({
@@ -176,15 +198,7 @@ export default function InterviewPage() {
                   onClick={async () => {
                     setIsCancelModalOpen(false);
                     await cancel();
-                    try {
-                      const usageRes = await fetch("/api/user/usage");
-                      const usageJson = await usageRes.json();
-                      if (usageJson.success) {
-                        setUsageInfo(usageJson.data);
-                      }
-                    } catch (err) {
-                      console.error(err);
-                    }
+                    await refreshUsage();
                   }}
                   className="px-6 py-2.5 rounded-xl bg-error-red text-white text-sm font-semibold hover:bg-error-red/90 transition-colors active:scale-95 shadow-md shadow-error-red/20 cursor-pointer"
                 >

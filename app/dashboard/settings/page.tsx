@@ -49,7 +49,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
 
 export default function SettingsPage() {
   const { user } = useUser();
-  const { openUserProfile } = useClerk();
+  const { openUserProfile, signOut } = useClerk();
   const {
     provider,
     targetRole,
@@ -207,27 +207,23 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!profileData?.user.id) return;
     setDeletingData(true);
     setDeleteState("idle");
     try {
-      await fetch("/api/cognee/forget", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: profileData.user.id }),
-      });
-      const res = await fetch("/api/user/data", { method: "DELETE" });
+      // Full account deletion: tombstone + Cognee + DB rows + Clerk user.
+      const res = await fetch("/api/user/delete-account", { method: "DELETE" });
       const j = await res.json();
-      if (!j.success) throw new Error(j.error || "Failed to delete data");
-      
+      if (!j.success) throw new Error(j.error || "Failed to delete account");
+
       setDeleteState("done");
       setConfirmDeleteOpen(false);
-      toast.success("Account data deleted");
-      window.location.href = "/dashboard";
+      toast.success("Account deleted");
+
+      // Clerk user is gone; sign out to clear the local session and land on home.
+      await signOut({ redirectUrl: "/" });
     } catch {
-      toast.error("Failed to delete account data");
+      toast.error("Failed to delete account");
       setDeleteState("error");
-    } finally {
       setDeletingData(false);
     }
   };
@@ -295,9 +291,9 @@ export default function SettingsPage() {
               <div className="w-11 h-11 rounded-2xl bg-error-red/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-error-red">delete_forever</span>
               </div>
-              <h2 className="text-xl font-bold text-on-surface">Delete Account Data?</h2>
+              <h2 className="text-xl font-bold text-on-surface">Delete Account?</h2>
               <p className="text-sm text-on-surface-variant mt-2">
-                This permanently deletes all your interviews, reports, and AI memory. Your account and profile settings will remain. This action cannot be undone.
+                This permanently deletes your entire account — profile, interviews, reports, and AI memory — and signs you out. This action cannot be undone.
               </p>
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <button
@@ -312,7 +308,7 @@ export default function SettingsPage() {
                   disabled={deletingData}
                   className="py-3 rounded-xl bg-error-red text-white text-sm font-bold hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  {deletingData ? "Deleting..." : "Delete Data"}
+                  {deletingData ? "Deleting..." : "Delete Account"}
                 </button>
               </div>
             </div>
@@ -650,12 +646,12 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-outline-variant/30 text-xs">
-                <p className="text-on-surface-variant font-medium">Clear all interview history, reports, and memory.</p>
-                <button 
+                <p className="text-on-surface-variant font-medium">Permanently delete your account, all data, and sign out.</p>
+                <button
                   onClick={() => setConfirmDeleteOpen(true)}
                   className="px-4 py-2 rounded-lg text-error-red font-bold hover:bg-error-red/10 transition-colors cursor-pointer active:scale-95"
                 >
-                  Delete Account Data
+                  Delete Account
                 </button>
               </div>
             </section>
