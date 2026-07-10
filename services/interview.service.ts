@@ -7,7 +7,7 @@ import {
   evaluationSystemPrompt,
 } from "@/lib/ai/prompts";
 import { buildHistoricalContextBlock } from "@/lib/ai/evaluationPromptBuilder";
-import { recallHistoricalMemory } from "@/services/cognee.service";
+import { recallHistoricalMemory, EMPTY_HISTORICAL_CONTEXT } from "@/services/cognee.service";
 import { resolveCompanyName, replaceCompanyPlaceholder } from "@/lib/utils/company";
 import {
   startTimer,
@@ -24,8 +24,15 @@ import type { Evaluation } from "@/types";
 export async function evaluateInterview(params: {
   interviewId: string;
   userId: string;
+  /**
+   * Skip the Cognee historical-memory recall and evaluate purely from this
+   * interview's answers. Keeps report generation fast + independent of Cognee;
+   * memory is written separately (persistInterviewMemory) after the report is
+   * saved.
+   */
+  skipHistory?: boolean;
 }): Promise<Evaluation> {
-  const { interviewId, userId } = params;
+  const { interviewId, userId, skipHistory } = params;
 
   const interview = await prisma.interview.findFirst({
     where: { id: interviewId, userId },
@@ -47,11 +54,15 @@ export async function evaluateInterview(params: {
   }
 
   // ── Phase 6: Recall historical memory before evaluation ──────────────────
-  const historicalMemory = await recallHistoricalMemory({
-    userId,
-    role: interview.role,
-    interviewType: interview.interviewType ?? undefined,
-  });
+  // Skipped during report generation — we only send this interview's answers to
+  // Gemini. Cognee is written afterwards, not read here.
+  const historicalMemory = skipHistory
+    ? EMPTY_HISTORICAL_CONTEXT
+    : await recallHistoricalMemory({
+        userId,
+        role: interview.role,
+        interviewType: interview.interviewType ?? undefined,
+      });
 
   const historicalContextBlock = buildHistoricalContextBlock(historicalMemory);
 

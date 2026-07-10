@@ -25,39 +25,63 @@ function ReportsPageInner() {
   const [loading, setLoading] = useState(true);
   // True while we're evaluating a just-finished interview into a report.
   const [generating, setGenerating] = useState(Boolean(generateId));
+  // Set when report generation fails, so we can offer a Retry button.
+  const [genError, setGenError] = useState(false);
+  // The interview id to (re)generate a report for, kept after the URL param is
+  // cleared so Retry still works.
+  const [pendingId, setPendingId] = useState<string | null>(generateId);
+
+  async function loadReports() {
+    try {
+      const r = await fetch(API.reports, { cache: "no-store" });
+      const j = await r.json();
+      setReports(j.data ?? []);
+    } catch (e) {
+      console.error("Failed to load reports", e);
+    }
+  }
+
+  // Generate the report for `id`. Returns true on success. The eval route is
+  // idempotent + de-duplicated with /api/interview/end, so a background
+  // evaluation and this call resolve to the same report.
+  async function generateReport(id: string): Promise<boolean> {
+    setGenerating(true);
+    setGenError(false);
+    try {
+      const res = await fetch(API.evaluation, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interviewId: id }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || (j && j.ok === false)) {
+        throw new Error("generation failed");
+      }
+      return true;
+    } catch (e) {
+      console.error("Failed to generate report", e);
+      setGenError(true);
+      return false;
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const handleRetry = async () => {
+    if (!pendingId) return;
+    const okDone = await generateReport(pendingId);
+    if (okDone) await loadReports();
+  };
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadReports() {
-      try {
-        const r = await fetch(API.reports, { cache: "no-store" });
-        const j = await r.json();
-        if (!cancelled) setReports(j.data ?? []);
-      } catch (e) {
-        console.error("Failed to load reports", e);
-      }
-    }
-
     async function run() {
-      // If arriving from a finished interview, generate its report first.
-      // The eval route is idempotent + de-duplicated with /api/interview/end,
-      // so a background evaluation and this call resolve to the same report.
       if (generateId) {
-        setGenerating(true);
-        try {
-          await fetch(API.evaluation, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ interviewId: generateId }),
-          });
-        } catch (e) {
-          console.error("Failed to generate report", e);
-        } finally {
-          if (!cancelled) setGenerating(false);
-          // Drop the ?generate param so a refresh doesn't re-trigger.
-          router.replace(ROUTES.reports);
-        }
+        await generateReport(generateId);
+        // Drop the ?generate param so a refresh doesn't re-trigger, but keep
+        // pendingId in state for the Retry button.
+        if (!cancelled) router.replace(ROUTES.reports);
       }
 
       await loadReports();
@@ -101,6 +125,31 @@ function ReportsPageInner() {
               <p className="text-sm text-on-surface-variant">
                 We&apos;re analyzing your interview and compiling detailed feedback. This usually takes a few moments.
               </p>
+            </div>
+          ) : genError ? (
+            <div className="flex flex-col items-center justify-center p-12 bg-white border border-error-red/30 rounded-xxl shadow-xl text-center max-w-2xl mx-auto min-h-[300px]">
+              <div className="w-16 h-16 rounded-full bg-error-red/10 flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-error-red text-3xl">error</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Couldn&apos;t generate your report</h3>
+              <p className="text-sm text-on-surface-variant mb-6">
+                Something went wrong while analyzing your interview. Your answers are saved — you can try again.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleRetry}
+                  className="bg-primary text-white px-8 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  Retry
+                </button>
+                <button
+                  onClick={() => setGenError(false)}
+                  className="px-6 py-3 rounded-xl text-xs font-bold text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           ) : loading ? (
             <div className="flex items-center justify-center p-12 text-sm text-on-surface-variant gap-2">

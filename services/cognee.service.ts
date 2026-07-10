@@ -486,23 +486,26 @@ function formatHistoricalMemory(memories: string[]): string | null {
     .slice(0, 4000);
 }
 
+/** Baseline historical context: no prior interviews / Cognee not consulted. */
+export const EMPTY_HISTORICAL_CONTEXT: HistoricalEvaluationContext = {
+  memories: [],
+  formatted: null,
+  count: 0,
+  previousScores: {
+    overall: null, technical: null, communication: null,
+    confidence: null, behavioral: null, problemSolving: null,
+  },
+  trends: {
+    recurringStrengths: [], recurringWeaknesses: [],
+    communicationTrend: null, confidenceTrend: null,
+    improvementAreas: [], stillNeedsWork: [], previousRecommendations: [],
+  },
+};
+
 export async function recallHistoricalMemory(
   params: HistoricalEvaluationRecallParams,
 ): Promise<HistoricalEvaluationContext> {
-  const empty: HistoricalEvaluationContext = {
-    memories: [],
-    formatted: null,
-    count: 0,
-    previousScores: {
-      overall: null, technical: null, communication: null,
-      confidence: null, behavioral: null, problemSolving: null,
-    },
-    trends: {
-      recurringStrengths: [], recurringWeaknesses: [],
-      communicationTrend: null, confidenceTrend: null,
-      improvementAreas: [], stillNeedsWork: [], previousRecommendations: [],
-    },
-  };
+  const empty = EMPTY_HISTORICAL_CONTEXT;
 
   const t = startTimer();
 
