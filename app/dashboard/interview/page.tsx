@@ -54,7 +54,7 @@ export default function InterviewPage() {
   // Data Fetching states
   const [profileData, setProfileData] = useState<any>(null);
   const [insightsData, setInsightsData] = useState<any>(null);
-  const [usageInfo, setUsageInfo] = useState<{ totalUsed: number; maxUses: number; remaining: number; isLimitReached: boolean } | null>(null);
+  const [usageInfo, setUsageInfo] = useState<{ totalUsed: number; maxUses: number; remaining: number; isLimitReached: boolean; window?: string; windowLabel?: string } | null>(null);
   const [setupLoading, setSetupLoading] = useState(true);
 
   useEffect(() => {
@@ -112,7 +112,7 @@ export default function InterviewPage() {
   useEffect(() => {
     if (error) {
       if (error === "INTERVIEW_LIMIT_REACHED") {
-        toast.error("You have reached the monthly interview limit.");
+        toast.error(`You have reached the interview limit for this ${usageInfo?.windowLabel ?? "month"}.`);
       } else {
         toast.error(error);
       }
@@ -163,7 +163,7 @@ export default function InterviewPage() {
               </div>
               <h2 className="text-xl font-bold text-on-surface">Cancel Interview?</h2>
               <p className="text-sm text-on-surface-variant mt-2">
-                Are you sure you want to cancel? This will count as 1 used interview out of your monthly limit.
+                Are you sure you want to cancel? This will count as 1 used interview out of your limit for this {usageInfo?.windowLabel ?? "month"}.
               </p>
               <div className="flex justify-end gap-3 mt-6">
                 <button
@@ -221,9 +221,9 @@ export default function InterviewPage() {
               <div className="w-16 h-16 rounded-full bg-error-red/10 flex items-center justify-center mb-6">
                 <span className="material-symbols-outlined text-error-red text-3xl">block</span>
               </div>
-              <h3 className="text-xl font-bold mb-4">Monthly Interview Limit Reached</h3>
-              <p className="text-on-surface-variant font-medium mb-2">You have used all 3 interviews available this month.</p>
-              <p className="text-on-surface-variant font-medium">Please come back next month.</p>
+              <h3 className="text-xl font-bold mb-4">Interview Limit Reached</h3>
+              <p className="text-on-surface-variant font-medium mb-2">You have used all {usageInfo?.maxUses ?? 3} interviews available this {usageInfo?.windowLabel ?? "month"}.</p>
+              <p className="text-on-surface-variant font-medium">Please come back next {usageInfo?.windowLabel ?? "month"}.</p>
               <button
                 onClick={() => router.push(ROUTES.dashboard)}
                 className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer"
@@ -445,7 +445,7 @@ export default function InterviewPage() {
                     {usageInfo && (
                       <div className="bg-white p-lg rounded-xxl border border-outline-variant/30 shadow-sm flex flex-col items-center text-center">
                         <div className="w-full flex items-center justify-between mb-6">
-                          <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase">MONTHLY USAGE</p>
+                          <p className="text-[9px] font-bold text-on-surface-variant tracking-widest uppercase">{usageInfo.windowLabel ?? "month"} USAGE</p>
                         </div>
                         <div className="relative w-28 h-28 flex items-center justify-center">
                           <svg className="w-full h-full transform -rotate-90">
@@ -464,7 +464,7 @@ export default function InterviewPage() {
                           </div>
                         </div>
                         <p className={`mt-6 text-xs font-medium leading-relaxed ${usageInfo.isLimitReached ? "text-error-red" : "text-on-surface-variant"}`}>
-                          {usageInfo.isLimitReached ? "You have reached your limit." : `You have ${usageInfo.remaining} uses remaining this month.`}
+                          {usageInfo.isLimitReached ? "You have reached your limit." : `You have ${usageInfo.remaining} uses remaining this ${usageInfo.windowLabel ?? "month"}.`}
                         </p>
                       </div>
                     )}

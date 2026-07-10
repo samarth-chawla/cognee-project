@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { Difficulty, InterviewStatus } from "@prisma/client";
-import { LIMITS } from "@/lib/config/limits";
+import { getLimits, getUsageWindowBounds } from "@/lib/config/limits";
 import { complete, parseJSON } from "@/lib/ai";
 import {
   buildEvaluationPrompt,
@@ -230,20 +230,40 @@ export async function createInterviewSession(params: CreateInterviewParams) {
 
 
   return prisma.$transaction(async (tx) => {
-    // Check monthly limit inside the transaction to prevent race conditions
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    
+    // Check the usage limit inside the transaction to prevent race conditions.
+    // Window (day/week/month) + max count come from env-driven config.
+    const { MAX_INTERVIEWS } = getLimits();
+    const { start: windowStart, end: windowEnd } = getUsageWindowBounds();
+
     const count = await tx.interview.count({
       where: {
         userId,
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
+        createdAt: { gte: windowStart, lte: windowEnd },
         status: { in: [InterviewStatus.READY, InterviewStatus.ONGOING, InterviewStatus.COMPLETED, InterviewStatus.CANCELLED] }
       }
     });
 
-    if (count >= LIMITS.MAX_INTERVIEWS_PER_MONTH) {
+    // Carry forward interviews used under a same-email account deleted in THIS
+    // window. Blocks "use quota → delete account → re-signup → fresh quota"
+    // abuse. (A past window resets naturally, so only the current one counts.)
+    const currentUser = await tx.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    let priorUsed = 0;
+    if (currentUser?.email) {
+      const priorAgg = await tx.accountDeletionLog.aggregate({
+        where: {
+          email: currentUser.email,
+          deletedAt: { gte: windowStart, lte: windowEnd },
+        },
+        _sum: { usedCount: true },
+      });
+      priorUsed = priorAgg._sum.usedCount ?? 0;
+    }
+
+    if (count + priorUsed >= MAX_INTERVIEWS) {
       throw new Error("INTERVIEW_LIMIT_REACHED");
     }
 

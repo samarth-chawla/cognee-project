@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createInterviewSession } from "@/services/interview.service";
 import { success, failure, errorResponse, unauthorized, handleZodError } from "@/lib/utils/api";
 import { prisma } from "@/lib/db/prisma";
-import { canGenerateInterview } from "@/services/usage.service";
+import { getWindowLabel } from "@/lib/config/limits";
 import { Difficulty } from "@prisma/client";
 
 const StartInterviewSchema = z.object({
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({
         success: false,
         code: "INTERVIEW_LIMIT_REACHED",
-        message: "You have reached the monthly interview limit.",
+        message: `You have reached the interview limit for this ${getWindowLabel()}.`,
         remaining: 0
       }), {
         status: 429,

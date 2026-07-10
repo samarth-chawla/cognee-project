@@ -95,13 +95,78 @@ export async function syncCurrentClerkUserToDatabase() {
   return syncClerkUserToDatabase(user);
 }
 
+type DeletionNotice = {
+  clerkId: string;
+  email: string;
+  fullName: string | null;
+  usedCount: number;
+};
+
+// Notify the operator that an account was deleted. Always logs; if
+// SLACK_DELETE_WEBHOOK is set it also pings Slack. Non-blocking by design —
+// any failure here is swallowed so it never affects the deletion flow.
+async function notifyAccountDeleted(notice: DeletionNotice) {
+  console.log("[AccountDeletion] account deleted", notice);
+
+  const webhook = process.env.SLACK_DELETE_WEBHOOK;
+  if (!webhook) return;
+
+  try {
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: `🗑️ Account deleted — ${notice.fullName ?? "Unknown"} <${notice.email}> (used ${notice.usedCount} interviews, clerkId ${notice.clerkId})`,
+      }),
+    });
+  } catch (reason) {
+    console.error("[AccountDeletion] Slack notify failed", {
+      reason: reason instanceof Error ? reason.message : String(reason),
+    });
+  }
+}
+
 export async function deleteClerkUserFromDatabase(clerkId: string) {
   // Resolve the internal userId BEFORE deleting the row so we can pass it
   // to Cognee.  If the user doesn't exist in the DB we skip Cognee silently.
   const user = await prisma.user.findUnique({
     where: { clerkId },
-    select: { id: true },
+    select: { id: true, email: true, fullName: true },
   });
+
+  // ── Tombstone: snapshot the account before it is hard-deleted ─────────────
+  // We record who left + how many interviews they consumed. Keyed on email so
+  // that a later re-signup (new clerkId) still carries the prior usage forward.
+  if (user) {
+    try {
+      const usedCount = await prisma.interview.count({
+        where: { userId: user.id },
+      });
+
+      await prisma.accountDeletionLog.create({
+        data: {
+          clerkId,
+          email: user.email,
+          fullName: user.fullName,
+          usedCount,
+        },
+      });
+
+      await notifyAccountDeleted({
+        clerkId,
+        email: user.email,
+        fullName: user.fullName,
+        usedCount,
+      });
+    } catch (reason) {
+      // Logging the tombstone must never block the actual account deletion.
+      console.error("[AccountDeletion] failed to write tombstone log", {
+        clerkId,
+        reason: reason instanceof Error ? reason.message : String(reason),
+      });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const result = await prisma.user.deleteMany({
     where: { clerkId },

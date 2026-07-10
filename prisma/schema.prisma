@@ -177,3 +177,22 @@ model InterviewAnalytics {
 
   @@index([readinessScore])
 }
+
+// Tombstone: immutable record of a deleted account. Survives the hard-delete of
+// the User row so we keep knowledge of who left and how much they used. Keyed on
+// email (stable identity) — clerkId changes on every re-signup, so email is the
+// anchor that stops "delete + re-create" from resetting the usage limit.
+model AccountDeletionLog {
+  id         String   @id @default(cuid())
+  clerkId    String
+  email      String
+  fullName   String?
+  usedCount  Int      @default(0)
+  reason     String?
+  source     String   @default("clerk-webhook")
+  deletedAt  DateTime @default(now())
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([deletedAt])
+}
