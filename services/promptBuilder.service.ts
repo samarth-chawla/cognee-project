@@ -12,7 +12,7 @@
 import { buildInterviewGenerationPrompt } from "@/lib/ai/promptBuilder";
 import { parseJobDescription } from "@/lib/ai/questionGenerator";
 import { prisma } from "@/lib/db/prisma";
-import { recallCandidateMemory } from "@/services/cognee.service";
+import { recallCandidateMemory, EMPTY_CANDIDATE_CONTEXT } from "@/services/cognee.service";
 import { resolveCompanyName } from "@/lib/utils/company";
 import {
   startTimer,
@@ -72,13 +72,23 @@ export async function prepareInterviewPrompt(interview: PromptInterview): Promis
     }
   }
 
-  // ── 2. Recall candidate memory — exactly once per request ────────────────
-  const candidateMemory = await recallCandidateMemory({
-    userId: interview.userId,
-    role: interview.role,
-    company: interview.customCompanyName || interview.company,
-    interviewType: interview.interviewType,
+  // ── 2. Recall candidate memory — but skip Cognee for a first-time user ────
+  // A user with no completed interviews has no memory yet, so calling Cognee
+  // just adds latency + a failure surface for nothing. Only consult it once the
+  // user has at least one finished interview.
+  const priorCompleted = await prisma.interview.count({
+    where: { userId: interview.userId, status: "COMPLETED" },
   });
+
+  const candidateMemory =
+    priorCompleted > 0
+      ? await recallCandidateMemory({
+          userId: interview.userId,
+          role: interview.role,
+          company: interview.customCompanyName || interview.company,
+          interviewType: interview.interviewType,
+        })
+      : EMPTY_CANDIDATE_CONTEXT;
 
   // ── 3. Build prompt ───────────────────────────────────────────────────────
   const prompt = buildInterviewGenerationPrompt({

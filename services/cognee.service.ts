@@ -325,20 +325,23 @@ function formatCandidateMemory(memories: string[]): string | null {
     .slice(0, 3500);
 }
 
+/** Baseline candidate context: first interview / Cognee not consulted. */
+export const EMPTY_CANDIDATE_CONTEXT: CandidateMemoryContext = {
+  memories: [],
+  formatted: null,
+  count: 0,
+  focus: {
+    recurringStrengths: [],
+    recurringWeaknesses: [],
+    previouslyMissedTopics: [],
+    recentRecommendations: [],
+  },
+};
+
 export async function recallCandidateMemory(
   params: CandidateMemoryRecallParams,
 ): Promise<CandidateMemoryContext> {
-  const empty: CandidateMemoryContext = {
-    memories: [],
-    formatted: null,
-    count: 0,
-    focus: {
-      recurringStrengths: [],
-      recurringWeaknesses: [],
-      previouslyMissedTopics: [],
-      recentRecommendations: [],
-    },
-  };
+  const empty = EMPTY_CANDIDATE_CONTEXT;
 
   const t = startTimer();
 
