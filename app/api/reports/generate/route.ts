@@ -13,8 +13,26 @@ const bodySchema = z.object({
   interviewId: z.string().min(1),
 });
 
-const MAX_EVAL_ATTEMPTS = 3;
+// One outer attempt only. geminiComplete already retries internally (2 models
+// × 3 attempts w/ backoff). Under high demand we DON'T pile another ×3 on top —
+// that just hammers an overloaded API. On failure the interview is marked FAILED
+// and the user gets a "Generate latest report" button to try again later.
+const MAX_EVAL_ATTEMPTS = 1;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Anti-spam backstop: once an evaluation fails for an interview, refuse to re-run
+// Gemini for this window so repeated button clicks / scripts don't burn quota.
+// The client also disables the button during this window; this stops server-side
+// abuse too. Cleared on a successful generation.
+const FAIL_COOLDOWN_MS = 30_000;
+const lastFailAt = new Map<string, number>();
+
+class CooldownError extends Error {
+  constructor() {
+    super("EVAL_COOLDOWN");
+    this.name = "CooldownError";
+  }
+}
 
 /**
  * Evaluate with retry + backoff. On total failure, mark the interview FAILED so
@@ -43,6 +61,9 @@ async function evaluateWithRetry(interviewId: string, userId: string) {
       }
     }
   }
+
+  // Start the anti-spam cooldown so rapid re-clicks don't re-hit Gemini.
+  lastFailAt.set(interviewId, Date.now());
 
   // All attempts failed — don't leave the interview stuck ONGOING.
   try {
@@ -98,6 +119,17 @@ export async function POST(request: NextRequest) {
         if (cached) return cached.evaluation;
       }
 
+      // Anti-spam: if a recent attempt failed, refuse to re-run Gemini until the
+      // cooldown elapses. Protects quota from repeated clicks / scripted retries.
+      const failedAt = lastFailAt.get(interviewId);
+      if (failedAt && Date.now() - failedAt < FAIL_COOLDOWN_MS) {
+        console.warn("[Interview] Evaluation on cooldown — skipping", {
+          interviewId,
+          retryInMs: FAIL_COOLDOWN_MS - (Date.now() - failedAt),
+        });
+        throw new CooldownError();
+      }
+
       console.log("[Interview] Evaluation started (reports/generate)", {
         interviewId,
       });
@@ -106,6 +138,9 @@ export async function POST(request: NextRequest) {
       // before giving up. evaluateInterview only reads + calls Gemini here — no
       // writes happen until it returns — so retrying is safe.
       const result = await evaluateWithRetry(interviewId, user.id);
+
+      // Success — clear any prior failure cooldown for this interview.
+      lastFailAt.delete(interviewId);
 
       const report = await saveReport(user.id, interviewId, result);
 
@@ -146,6 +181,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(ok(evaluation));
   } catch (reason) {
+    // On cooldown — tell the client to wait, don't log as a real failure.
+    if (reason instanceof CooldownError) {
+      return NextResponse.json(
+        fail("Report generation is cooling down after a recent failure. Please wait a moment and try again."),
+        { status: 429 },
+      );
+    }
     console.error("[Interview] Report generation failed", { reason });
     // errorResponse already sanitizes to a friendly message server-side.
     return errorResponse(reason, FRIENDLY.aiRetry);

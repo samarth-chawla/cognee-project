@@ -224,11 +224,15 @@ export function logPersonalizationSummary(context: {
   });
 }
 
+// NOTE: report-generation Gemini calls are NOT Cognee. They log under a
+// [Gemini] prefix so the timeline doesn't look like Cognee runs before the
+// report. Cognee memory writes (remember/improve) happen only AFTER the report
+// is saved, via persistInterviewMemory.
 export function logEvaluationStart(context: {
   interviewId: string;
   hasHistory: boolean;
 }): void {
-  log("Gemini evaluation started", {
+  console.log("[Gemini] evaluation started", {
     interviewId: context.interviewId,
     hasHistory: context.hasHistory,
   });
@@ -239,7 +243,7 @@ export function logEvaluationComplete(context: {
   hasHistoricalProgress: boolean;
   durationMs: number;
 }): void {
-  log("Gemini evaluation completed", {
+  console.log("[Gemini] evaluation completed", {
     interviewId: context.interviewId,
     hasHistoricalProgress: context.hasHistoricalProgress,
     duration: formatMs(context.durationMs),

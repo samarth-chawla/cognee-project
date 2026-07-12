@@ -1,7 +1,56 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { InterviewStatus } from "@prisma/client";
 import type { Evaluation, Report } from "@/types";
+
+export interface PendingReportInterview {
+  interviewId: string;
+  role: string;
+  company: string | null;
+  customCompanyName: string | null;
+  status: string;
+  createdAt: string;
+}
+
+/**
+ * Latest interview that has answers but no report yet because evaluation failed
+ * (status FAILED — e.g. deferred under high demand). Used to offer a "Generate
+ * latest report" button. Returns null when nothing is pending. ONGOING is
+ * excluded so an in-progress interview never shows the banner.
+ */
+export async function getPendingReportInterview(
+  userId: string,
+): Promise<PendingReportInterview | null> {
+  const interview = await prisma.interview.findFirst({
+    where: {
+      userId,
+      report: { is: null },
+      answer: { isNot: null },
+      status: InterviewStatus.FAILED,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      role: true,
+      company: true,
+      customCompanyName: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  if (!interview) return null;
+
+  return {
+    interviewId: interview.id,
+    role: interview.role,
+    company: interview.company,
+    customCompanyName: interview.customCompanyName,
+    status: interview.status,
+    createdAt: interview.createdAt.toISOString(),
+  };
+}
 
 /** Persist evaluation data to the Report table via Prisma and return a Report object. */
 export async function saveReport(
