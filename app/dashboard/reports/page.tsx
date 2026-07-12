@@ -16,6 +16,15 @@ export default function ReportsPage() {
   );
 }
 
+type PendingReport = {
+  interviewId: string;
+  role: string;
+  company: string | null;
+  customCompanyName: string | null;
+  status: string;
+  createdAt: string;
+};
+
 function ReportsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,6 +36,21 @@ function ReportsPageInner() {
   const [generating, setGenerating] = useState(Boolean(generateId));
   // Set when report generation fails.
   const [genError, setGenError] = useState(false);
+  // Human-readable failure message from the server (e.g. cooldown notice).
+  const [genErrorMsg, setGenErrorMsg] = useState<string | null>(null);
+  // Epoch ms until which retry is blocked (server anti-spam cooldown, 0 = none).
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  // Ticks every second so the cooldown countdown re-renders.
+  const [nowTs, setNowTs] = useState(0);
+  // The interview id to (re)generate a report for, kept after the URL param is
+  // cleared so Retry still works.
+  const [pendingId, setPendingId] = useState<string | null>(generateId);
+  // Latest interview that finished but has no report yet (eval failed under high
+  // demand). Drives the "Generate latest report" banner.
+  const [pending, setPending] = useState<PendingReport | null>(null);
+
+  const cooldownLeft = Math.max(0, Math.ceil((cooldownUntil - nowTs) / 1000));
+  const coolingDown = cooldownLeft > 0;
 
   async function loadReports() {
     try {
@@ -35,6 +59,16 @@ function ReportsPageInner() {
       setReports(j.data ?? []);
     } catch (e) {
       console.error("Failed to load reports", e);
+    }
+  }
+
+  async function loadPending() {
+    try {
+      const r = await fetch(API.pendingReport, { cache: "no-store" });
+      const j = await r.json();
+      setPending((j.data as PendingReport | null) ?? null);
+    } catch (e) {
+      console.error("Failed to load pending report", e);
     }
   }
 
@@ -52,6 +86,15 @@ function ReportsPageInner() {
       });
       const j = await res.json().catch(() => null);
       if (!res.ok || (j && j.ok === false)) {
+        // 429 = server cooldown after a recent failure; surface the wait message
+        // instead of a generic error so users don't hammer the button.
+        if (res.status === 429) {
+          setCooldownUntil(Date.now() + 30_000);
+        }
+        setGenErrorMsg(
+          (j && typeof j.error === "string" && j.error) ||
+            "Something went wrong while analyzing your interview. Your answers are saved — you can try again.",
+        );
         throw new Error("generation failed");
       }
       return true;
@@ -64,6 +107,33 @@ function ReportsPageInner() {
     }
   }
 
+  const handleRetry = async () => {
+    // Block re-clicks while generating or during the post-failure cooldown so we
+    // never fire a needless Gemini call.
+    if (!pendingId || generating || coolingDown) return;
+    const okDone = await generateReport(pendingId);
+    if (okDone) {
+      await Promise.all([loadReports(), loadPending()]);
+    }
+  };
+
+  // Generate the report for the pending interview surfaced by the banner.
+  const handleGeneratePending = async () => {
+    if (!pending || generating || coolingDown) return;
+    setPendingId(pending.interviewId);
+    const okDone = await generateReport(pending.interviewId);
+    if (okDone) {
+      await Promise.all([loadReports(), loadPending()]);
+    }
+  };
+
+  // Drive the cooldown countdown re-render once per second while it's active.
+  useEffect(() => {
+    if (cooldownUntil <= 0) return;
+    setNowTs(Date.now());
+    const t = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [cooldownUntil]);
   useEffect(() => {
     let cancelled = false;
 
@@ -74,7 +144,7 @@ function ReportsPageInner() {
         if (!cancelled) router.replace(ROUTES.reports);
       }
 
-      await loadReports();
+      await Promise.all([loadReports(), loadPending()]);
       if (!cancelled) setLoading(false);
     }
 
@@ -106,6 +176,33 @@ function ReportsPageInner() {
             </p>
           </header>
 
+          {/* Pending report banner — shown when a finished interview has no
+              report yet (evaluation deferred under high demand). */}
+          {!generating && !genError && pending && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-primary/5 border border-primary/20 rounded-2xl">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary text-2xl shrink-0">schedule</span>
+                <div>
+                  <h3 className="text-sm font-bold text-on-surface">Your latest report is pending</h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    {(pending.customCompanyName || pending.company)
+                      ? `${pending.role} · ${pending.customCompanyName || pending.company}`
+                      : pending.role}
+                    {" — evaluation was deferred due to high demand. Generate it now."}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleGeneratePending}
+                disabled={generating || coolingDown}
+                className="bg-primary text-white px-6 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                {coolingDown ? `Try again in ${cooldownLeft}s` : "Generate latest report"}
+              </button>
+            </div>
+          )}
+
           {generating ? (
             <div className="flex flex-col items-center justify-center p-12 bg-white border border-outline-variant/30 rounded-xxl shadow-xl text-center max-w-2xl mx-auto min-h-[300px]">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -123,9 +220,18 @@ function ReportsPageInner() {
               </div>
               <h3 className="text-xl font-bold mb-2">Couldn&apos;t generate your report</h3>
               <p className="text-sm text-on-surface-variant mb-6">
-                Something went wrong while analyzing your interview.
+                {genErrorMsg ??
+                  "Something went wrong while analyzing your interview. Your answers are saved — you can try again."}
               </p>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={handleRetry}
+                  disabled={generating || coolingDown}
+                  className="bg-primary text-white px-8 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  {coolingDown ? `Retry in ${cooldownLeft}s` : "Retry"}
+                </button>
                 <button
                   onClick={() => setGenError(false)}
                   className="bg-primary text-white px-8 py-3 rounded-xl text-xs font-bold shadow-lg hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer"

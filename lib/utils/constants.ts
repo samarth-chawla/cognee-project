@@ -24,6 +24,7 @@ export const API = {
   interviewVoiceAnswer: "/api/interview/voice/answer",
 
   evaluation: "/api/reports/generate",
+  pendingReport: "/api/interview/pending-report",
   speech: "/api/speech/transcribe",
   memory: "/api/memory/graph",
   reports: "/api/interview/history",

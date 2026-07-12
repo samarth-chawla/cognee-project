@@ -450,6 +450,15 @@ export default function VoiceInterview({
               View Report
             </button>
           )}
+          {state === "ERROR" && (
+            <button
+              onClick={goToReport}
+              className="mt-1 px-6 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-sm">auto_awesome</span>
+              Generate latest report
+            </button>
+          )}
         </div>
       </div>
     </div>

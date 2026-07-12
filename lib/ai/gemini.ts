@@ -3,9 +3,11 @@ import { DEFAULT_MODELS } from "@/lib/utils/constants";
 
 let client: GoogleGenerativeAI | null = null;
 
-/** Primary → single fallback. No other models are tried. */
+// Primary: gemini-2.5-flash-lite (DEFAULT_MODELS.gemini). Single fallback:
+// gemini-2.5-flash. gemini-flash-latest removed — that rolling alias kept
+// 404ing / retrying uselessly under load.
 const GEMINI_FALLBACK_MODELS = [
-  DEFAULT_MODELS.gemini,   // gemini-2.5-flash-lite (primary)
+  DEFAULT_MODELS.gemini,   // primary
   "gemini-2.5-flash",      // fallback only
 ] as const;
 
