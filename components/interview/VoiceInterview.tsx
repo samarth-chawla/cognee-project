@@ -9,7 +9,7 @@ import { useVoiceAgentStore } from "@/store/useVoiceAgentStore";
 import { useInterviewStore } from "@/store/useInterviewStore";
 import type { ConversationState } from "@/types/voiceAgent";
 import type { Interview } from "@/types";
-import { ROUTES } from "@/lib/utils/constants";
+import { API, ROUTES } from "@/lib/utils/constants";
 
 interface VoiceInterviewProps {
   interview: Interview;
@@ -122,7 +122,7 @@ export default function VoiceInterview({
   const [elapsed, setElapsed] = useState(0);
   const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  // End-flow dialog: null → hidden, "confirm" → "End interview?", "report" → "Generate report?"
+  // End-flow dialog: null -> hidden, "confirm" -> "End interview?", "report" -> "Generate report?"
   const [endStep, setEndStep] = useState<null | "confirm" | "report">(null);
   // Guard so the natural-completion redirect fires only once.
   const navigatedRef = useRef(false);
@@ -135,8 +135,8 @@ export default function VoiceInterview({
     navigatedRef.current = true;
     stop();
     useInterviewStore.getState().reset();
-    router.push(`${ROUTES.reports}?generate=${interview.id}`);
-  }, [router, stop, interview.id]);
+    router.push(ROUTES.reports);
+  }, [router, stop]);
 
   const meta = STATE_META[state] ?? STATE_META.IDLE;
   const isSpeaking =
@@ -217,15 +217,25 @@ export default function VoiceInterview({
     return `Question ${current} of ${totalQuestions}`;
   }, [currentQuestion, totalQuestions]);
 
-  // "End" button → confirm dialog first (mirrors the cancel flow).
+  // "End" button -> confirm dialog first (mirrors the cancel flow).
   const handleEnd = () => setEndStep("confirm");
 
-  // User confirmed ending early → ask whether to generate a report.
+  // User confirmed ending early -> ask whether to generate a report.
   const handleConfirmEnd = () => setEndStep("report");
 
   // Early end, generate a report from answers given so far.
-  const handleEndWithReport = () => {
+  const handleEndWithReport = async () => {
     setEndStep(null);
+    try {
+      // Manually trigger the end endpoint to queue the report generation
+      await fetch(API.interviewEnd, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interviewId: interview.id }),
+      });
+    } catch (e) {
+      console.error("Failed to trigger early report generation", e);
+    }
     goToReport();
   };
 
@@ -455,8 +465,7 @@ export default function VoiceInterview({
               onClick={goToReport}
               className="mt-1 px-6 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#4338CA] transition-all active:scale-95 cursor-pointer flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
-              Generate latest report
+              Go to Reports
             </button>
           )}
         </div>

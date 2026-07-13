@@ -22,25 +22,28 @@ export interface PendingReportInterview {
 export async function getPendingReportInterview(
   userId: string,
 ): Promise<PendingReportInterview | null> {
-  const interview = await prisma.interview.findFirst({
+  const job = await prisma.reportGenerationJob.findFirst({
     where: {
       userId,
-      report: { is: null },
-      answer: { isNot: null },
-      status: InterviewStatus.FAILED,
+      status: { in: ["PENDING", "PROCESSING"] },
     },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      role: true,
-      company: true,
-      customCompanyName: true,
-      status: true,
-      createdAt: true,
-    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      interview: {
+        select: {
+          id: true,
+          role: true,
+          company: true,
+          customCompanyName: true,
+          status: true,
+          createdAt: true,
+        }
+      }
+    }
   });
 
-  if (!interview) return null;
+  if (!job) return null;
+  const interview = job.interview;
 
   return {
     interviewId: interview.id,
