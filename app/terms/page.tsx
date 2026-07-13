@@ -4,8 +4,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | ARIA",
-  description: "ARIA's terms of service. Please read carefully before using our AI interview preparation platform.",
+  title: "Terms of Service | Clutchly",
+  description: "Clutchly's terms of service. Please read carefully before using our AI interview preparation platform.",
 };
 
 export default function TermsPage() {
@@ -22,7 +22,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">1. Acceptance of Terms</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              By accessing or using ARIA ("the Service"), you agree to be bound by these Terms of Service ("Terms").
+              By accessing or using Clutchly ("the Service"), you agree to be bound by these Terms of Service ("Terms").
               If you disagree with any part, you may not use the Service.
             </p>
           </section>
@@ -30,9 +30,9 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">2. Description of Service</h2>
             <p className="text-on-surface-variant leading-relaxed mb-4">
-              ARIA provides AI-powered mock interview preparation with long-term memory tracking.
-              Features include voice/text interviews, performance analytics, personalized feedback,
-              and AI-generated insights based on your interview history.
+              Clutchly is an AI interview coach with persistent memory. Features include realistic
+              voice interviews, performance analytics, personalized feedback, and coaching that
+              adapts based on your interview history.
             </p>
             <p className="text-on-surface-variant leading-relaxed">
               We reserve the right to modify, suspend, or discontinue any feature at any time with reasonable notice.
@@ -42,7 +42,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">3. Accounts & Eligibility</h2>
             <ul className="list-disc list-inside space-y-2 text-on-surface-variant leading-relaxed">
-              <li>You must be at least 16 years old to use ARIA.</li>
+              <li>You must be at least 16 years old to use Clutchly.</li>
               <li>You are responsible for maintaining account security and all activity under your credentials.</li>
               <li>You must provide accurate, complete, and current registration information.</li>
               <li>Accounts are personal and non-transferable.</li>
@@ -68,7 +68,7 @@ export default function TermsPage() {
             <h2 className="text-2xl font-bold text-on-surface mb-3">5. User Content</h2>
             <p className="text-on-surface-variant leading-relaxed mb-4">
               You retain ownership of content you submit (resume, interview responses, profile data).
-              By using ARIA, you grant us a license to:
+              By using Clutchly, you grant us a license to:
             </p>
             <ul className="list-disc list-inside space-y-2 text-on-surface-variant leading-relaxed mb-4">
               <li>Process content to provide the Service (AI analysis, memory storage, feedback generation)</li>
@@ -102,7 +102,7 @@ export default function TermsPage() {
             <h2 className="text-2xl font-bold text-on-surface mb-3">7. Intellectual Property</h2>
             <p className="text-on-surface-variant leading-relaxed mb-4">
               The Service and its original content (excluding User Content), features, and functionality
-              are owned by ARIA and protected by international copyright, trademark, and patent laws.
+              are owned by Clutchly and protected by international copyright, trademark, and patent laws.
             </p>
             <p className="text-on-surface-variant leading-relaxed">
               Our name, logo, and brand assets may not be used without prior written consent.
@@ -133,7 +133,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">10. Limitation of Liability</h2>
             <p className="text-on-surface-variant leading-relaxed mb-4">
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, ARIA SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, Clutchly SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
               SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR OPPORTUNITIES,
               ARISING FROM YOUR USE OF THE SERVICE.
             </p>
@@ -146,7 +146,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">11. Indemnification</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              You agree to indemnify and hold ARIA harmless from any claims, damages, or expenses
+              You agree to indemnify and hold Clutchly harmless from any claims, damages, or expenses
               (including attorney fees) arising from your use of the Service, violation of these Terms,
               or infringement of any third-party rights.
             </p>
@@ -185,7 +185,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">15. Contact</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              Questions about these Terms? Contact us at <a href="mailto:legal@aria-interview.com" className="text-primary underline hover:text-primary/80">legal@aria-interview.com</a>
+              Questions about these Terms? Contact us at <a href="mailto:legal@clutchly.com" className="text-primary underline hover:text-primary/80">legal@clutchly.com</a>
             </p>
           </section>
         </article>

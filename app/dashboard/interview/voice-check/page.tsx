@@ -10,7 +10,7 @@ import { DeepgramStatus } from "@/components/interview/DeepgramStatus";
 export default function VoiceCheckPage() {
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 p-6">
-      <div className="text-center max-w-md">
+      <div className="text-center max-w-[28rem] w-full">
         <h1 className="text-2xl font-extrabold text-on-surface mb-2 tracking-tight">
           Voice Connection Check
         </h1>

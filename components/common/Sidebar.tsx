@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { ROUTES } from "@/lib/utils/constants";
+import { APP_NAME, ROUTES } from "@/lib/utils/constants";
 
 interface SidebarProps {
   targetRole?: string;
@@ -114,7 +114,7 @@ export default function Sidebar({
       {/* Mobile Header (Visible only on < lg screens) */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-outline-variant/30 flex items-center justify-between px-4 z-[40]">
         <Link href={ROUTES.home} className="flex items-center gap-2">
-          <span className="font-display font-extrabold text-primary text-xl">Interview AI</span>
+          <span className="font-display font-extrabold text-primary text-xl">{APP_NAME}</span>
         </Link>
         <button
           onClick={() => setMobileOpen(true)}
@@ -142,11 +142,11 @@ export default function Sidebar({
       <div className="mb-10 px-sm">
         <Link href={ROUTES.home}>
           <h1 className="font-display text-xl md:text-2xl font-extrabold text-primary hover:opacity-85 transition-opacity">
-            Interview AI
+            {APP_NAME}
           </h1>
         </Link>
         <p className="font-bold text-[9px] uppercase tracking-widest text-on-surface-variant mt-1">
-          Professional Grade
+          Never Forgets
         </p>
       </div>
 

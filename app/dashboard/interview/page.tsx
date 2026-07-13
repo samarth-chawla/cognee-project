@@ -252,7 +252,7 @@ export default function InterviewPage() {
               </div>
               <h3 className="text-lg sm:text-xl font-bold mb-2">Generating Tailored Questions...</h3>
               <p className="w-full text-sm sm:text-base text-on-surface-variant ">
-                ARIA is analyzing your target role (<span className="font-semibold text-primary">{targetRole}</span>) and past performance memory to compile the optimal session syllabus.
+                Clutchly is analyzing your target role (<span className="font-semibold text-primary">{targetRole}</span>) and past performance memory to compile the optimal session syllabus.
               </p>
                 <button
                   onClick={() => setIsCancelModalOpen(true)}
@@ -524,7 +524,7 @@ export default function InterviewPage() {
                         <div className="absolute -right-8 -top-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
                         <div className="flex items-center gap-sm mb-4">
                           <span className="material-symbols-outlined text-primary">auto_awesome</span>
-                          <h3 className="text-[10px] font-bold text-primary uppercase tracking-wider">Welcome to Interview Memory Agent</h3>
+                          <h3 className="text-[10px] font-bold text-primary uppercase tracking-wider">Welcome to Clutchly</h3>
                         </div>
                         <p className="text-sm text-on-surface leading-relaxed mb-6">
                           We&apos;ll track your performance, weaknesses, and improvement over time.

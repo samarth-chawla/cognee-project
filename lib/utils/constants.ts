@@ -1,10 +1,13 @@
-export const APP_NAME = "ARIA";
-export const APP_DESCRIPTION = "AI mock interviews with long-term memory. ARIA tracks your performance and tailors questions to help you land your dream job.";
+export const APP_NAME = "Clutchly";
+export const APP_TAGLINE = "The AI Coach That Never Forgets.";
+export const APP_TAGLINE_ALT = "Practice. Improve. Get Hired.";
+export const APP_DESCRIPTION =
+  "Clutchly is your AI interview coach that remembers every interview, adapts to your progress, and helps you become interview-ready through personalized voice practice.";
 
 export const SOCIAL_LINKS = {
-  twitter: "https://twitter.com/aria_interview",
-  github: "https://github.com/aria-interview",
-  linkedin: "https://linkedin.com/company/aria-interview",
+  twitter: "https://twitter.com/clutchly",
+  github: "https://github.com/clutchly",
+  linkedin: "https://linkedin.com/company/clutchly",
 } as const;
 
 // Support forms (Typeform) used by the footer. Temporary placeholder URLs —

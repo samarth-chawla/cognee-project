@@ -86,7 +86,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-surface text-on-surface font-body-md">
         <Sidebar profileLoaded={false} />
         <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen flex items-center justify-center w-full lg:w-[calc(100%-16rem)]">
-          <div className="p-xl bg-white border border-outline-variant/30 rounded-3xl shadow-sm text-center max-w-md w-full mx-4">
+          <div className="p-xl bg-white border border-outline-variant/30 rounded-3xl shadow-sm text-center max-w-[28rem] w-full mx-4">
             <div className="w-16 h-16 bg-error-red/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-error-red text-[32px]">error</span>
             </div>

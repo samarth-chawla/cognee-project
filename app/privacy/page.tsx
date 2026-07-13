@@ -4,8 +4,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | ARIA",
-  description: "ARIA's privacy policy. Learn how we collect, use, and protect your data.",
+  title: "Privacy Policy | Clutchly",
+  description: "Clutchly's privacy policy. Learn how we collect, use, and protect your data.",
 };
 
 export default function PrivacyPage() {
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">1. Introduction</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              Welcome to ARIA ("we," "our," "us"). We are committed to protecting your personal information and your right to privacy.
+              Welcome to Clutchly ("we," "our," "us"). We are committed to protecting your personal information and your right to privacy.
               This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI interview preparation platform.
             </p>
           </section>
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
               <li>Withdraw consent (where applicable)</li>
             </ul>
             <p className="text-on-surface-variant leading-relaxed mt-4">
-              To exercise these rights, use the "Delete Account" option in Settings or contact us at privacy@aria-interview.com.
+              To exercise these rights, use the "Delete Account" option in Settings or contact us at privacy@clutchly.com.
             </p>
           </section>
 
@@ -115,7 +115,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">9. Children's Privacy</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              ARIA is not intended for users under 16. We do not knowingly collect data from children.
+              Clutchly is not intended for users under 16. We do not knowingly collect data from children.
               If you believe we have collected such data, please contact us immediately.
             </p>
           </section>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold text-on-surface mb-3">11. Contact Us</h2>
             <p className="text-on-surface-variant leading-relaxed">
-              Questions about this policy? Contact us at <a href="mailto:privacy@aria-interview.com" className="text-primary underline hover:text-primary/80">privacy@aria-interview.com</a>
+              Questions about this policy? Contact us at <a href="mailto:privacy@clutchly.com" className="text-primary underline hover:text-primary/80">privacy@clutchly.com</a>
             </p>
           </section>
         </article>

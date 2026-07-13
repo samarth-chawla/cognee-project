@@ -65,7 +65,7 @@ export function DeepgramStatus() {
   const countdown = useCountdown(tokenExpiresAt);
 
   return (
-    <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-6 max-w-md w-full">
+    <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-6 max-w-[28rem] w-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-on-surface uppercase tracking-wider">
           Deepgram Connection

@@ -1,15 +1,15 @@
 import Link from "next/link";
 import {
+  APP_NAME,
   ROUTES,
   CONTACT_FORM_URL,
   FEEDBACK_FORM_URL,
   BUG_REPORT_FORM_URL,
 } from "@/lib/utils/constants";
 
-// Footer brand copy is specified explicitly by the product/legal requirements.
-const FOOTER_BRAND = "Interview Memory Agent";
+const FOOTER_BRAND = APP_NAME;
 const FOOTER_TAGLINE =
-  "Personalized AI-powered interview preparation that learns from every interview.";
+  "Clutchly is your AI interview coach that remembers every interview, adapts to your progress, and helps you become interview-ready through personalized voice practice.";
 
 type FooterLink = { label: string; href: string; external?: boolean };
 
