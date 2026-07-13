@@ -1,4 +1,16 @@
-export const APP_NAME = "Interview Memory Agent";
+export const APP_NAME = "ARIA";
+export const APP_DESCRIPTION = "AI mock interviews with long-term memory. ARIA tracks your performance and tailors questions to help you land your dream job.";
+
+export const SOCIAL_LINKS = {
+  twitter: "https://twitter.com/aria_interview",
+  github: "https://github.com/aria-interview",
+  linkedin: "https://linkedin.com/company/aria-interview",
+} as const;
+
+// Support contacts used by the footer. Temporary placeholders — easy to replace later.
+export const CONTACT_EMAIL = "support@interviewmemoryagent.com";
+export const FEEDBACK_EMAIL = "feedback@interviewmemoryagent.com";
+export const BUG_REPORT_EMAIL = "support@interviewmemoryagent.com";
 
 export const ROUTES = {
   home: "/",

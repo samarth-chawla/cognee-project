@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { ROUTES } from "@/lib/utils/constants";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { prisma } from "@/lib/db/prisma";
 
 export default async function Home() {
@@ -389,20 +390,7 @@ export default async function Home() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-surface border-t border-outline-variant/20">
-        <div className="flex flex-col md:flex-row justify-between items-center w-full px-8 py-12 max-w-container-max mx-auto gap-8">
-          <div className="text-lg font-bold text-on-surface">Interview Memory Agent</div>
-          <div className="flex flex-wrap justify-center gap-8 text-sm">
-            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Privacy Policy</a>
-            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Terms of Service</a>
-            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Contact Us</a>
-          </div>
-          <div className="text-[11px] font-semibold text-on-surface-variant tracking-wider uppercase">
-            © 2026 Interview Memory Agent. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

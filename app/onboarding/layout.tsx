@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { syncCurrentClerkUserToDatabase } from "@/lib/auth/sync-user";
 import { prisma } from "@/lib/db";
 import { ROUTES } from "@/lib/utils/constants";
+import Footer from "@/components/Footer";
 
 export default async function OnboardingLayout({
   children,
@@ -23,5 +24,10 @@ export default async function OnboardingLayout({
     }
   }
 
-  return children;
+  return (
+    <div className="min-h-screen bg-background text-on-surface flex flex-col font-sans">
+      {children}
+      <Footer variant="minimal" />
+    </div>
+  );
 }

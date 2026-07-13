@@ -159,21 +159,8 @@ export default function DashboardPage() {
         profileLoaded={true}
       />
 
-      <header className="hidden lg:flex fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] z-40 justify-between items-center px-xl h-16 bg-white/80 backdrop-blur-md border-b border-outline-variant/30">
-        <div className="flex items-center flex-1 max-w-xl">
-          <div className="relative w-full max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-sm">search</span>
-            <input
-              className="w-full bg-[#F5F5FA] border-none rounded-full pl-9 pr-4 py-2 text-xs focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-outline-variant text-on-surface"
-              placeholder="Search sessions, topics, or insights..."
-              type="text"
-            />
-          </div>
-        </div>
 
-      </header>
-
-      <main className="w-full lg:ml-64 lg:w-[calc(100%-16rem)] pt-20 lg:pt-16 min-h-screen">
+      <main className="w-full lg:ml-64 lg:w-[calc(100%-16rem)] lg:pt-3 pt-20 min-h-screen">
         <div className="p-4 md:p-xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-xl max-w-[1400px] mx-auto">
           {/* Left Column */}
           <div className="col-span-12 lg:col-span-9 space-y-xl">
