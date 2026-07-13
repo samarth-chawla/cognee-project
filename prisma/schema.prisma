@@ -121,6 +121,7 @@ model Interview {
   questions        Json?
   answer           Answer?
   report           Report?
+  reportGenerationJob ReportGenerationJob?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -195,4 +196,37 @@ model AccountDeletionLog {
   @@index([clerkId])
   @@index([email])
   @@index([deletedAt])
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobFailureReason {
+  RATE_LIMITED
+  SERVICE_UNAVAILABLE
+  NETWORK_ERROR
+  UNKNOWN
+}
+
+model ReportGenerationJob {
+  id            String            @id @default(cuid())
+  interviewId   String            @unique
+  interview     Interview         @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId        String
+  status        JobStatus         @default(PENDING)
+  failureReason JobFailureReason?
+  retryCount    Int               @default(0)
+  nextRetryAt   DateTime          @default(now())
+  lastError     String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([userId])
 }

@@ -22,8 +22,6 @@ export const API = {
   // Voice Agent (V2) — persistent Deepgram Voice Agent interview.
   interviewVoiceToken: "/api/interview/voice/token",
   interviewVoiceAnswer: "/api/interview/voice/answer",
-
-  evaluation: "/api/reports/generate",
   pendingReport: "/api/interview/pending-report",
   speech: "/api/speech/transcribe",
   memory: "/api/memory/graph",
