@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db/prisma";
 import { prepareInterviewPrompt } from "./promptBuilder.service";
 import { resolveCompanyName, replaceCompanyPlaceholder } from "@/lib/utils/company";
 import { withInFlight } from "@/lib/utils/dedup";
+import { initPipelineUsage } from "@/services/pipelineUsage.service";
+
 
 type StoredInterviewQuestion = {
   sequence: number;
@@ -181,9 +183,13 @@ export async function processInterviewGeneration(params: {
     const company = resolveCompanyName(interview);
     console.log("[Interview] Generation started", { interviewId: interview.id });
 
+    // Init pipeline usage row (best-effort — never blocks generation)
+    await initPipelineUsage(interview.id, interview.userId);
+
     try {
       const prompt = await prepareInterviewPrompt(interview);
-      const questionsData = await generateInterviewQuestions(prompt);
+      // Pass interviewId so question generation can track tokens + cost
+      const questionsData = await generateInterviewQuestions(prompt, interview.id);
 
       if (!questionsData || questionsData.length === 0) {
         throw new Error("AI returned no questions");

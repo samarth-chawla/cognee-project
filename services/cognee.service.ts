@@ -23,6 +23,19 @@ import {
   logForgetComplete,
   logForgetFailed,
 } from "@/lib/cognee/logger";
+import {
+  markCogneeSaveStart,
+  markCogneeSaveSuccess,
+  markCogneeSaveFailed,
+  markCogneeRetrievalStart,
+  markCogneeRetrievalSkipped,
+  markCogneeRetrievalSuccess,
+  markCogneeRetrievalFailed,
+  classifyFailureReason,
+  hasCogneeMemory,
+} from "@/services/pipelineUsage.service";
+import { sanitizeError } from "@/lib/ai/pricing";
+
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -114,6 +127,8 @@ export async function remember(
   memory: unknown,
   /** Per-user dataset name. Falls back to the global COGNEE_USER_ID if not supplied. */
   userId?: string | null,
+  /** Optional: pipeline usage tracking. Pass the interviewId to record save metrics. */
+  interviewId?: string | null,
 ): Promise<unknown> {
   const client = getCogneeClient();
   await client.initialize();
@@ -134,11 +149,36 @@ export async function remember(
   formData.append("datasetName", datasetName);
   formData.append("run_in_background", "false");
 
-  return client.request("/api/v1/remember", {
-    method: "POST",
-    formData,
-  });
+  const saveStartedAt = Date.now();
+  if (interviewId) {
+    await markCogneeSaveStart(interviewId);
+  }
+
+  try {
+    const result = await client.request("/api/v1/remember", {
+      method: "POST",
+      formData,
+    });
+
+    if (interviewId) {
+      // Cognee /remember doesn't return node/edge counts — use 0 as defaults
+      await markCogneeSaveSuccess(interviewId, 0, 0, Date.now() - saveStartedAt);
+    }
+
+    return result;
+  } catch (err) {
+    if (interviewId) {
+      await markCogneeSaveFailed(
+        interviewId,
+        Date.now() - saveStartedAt,
+        classifyFailureReason(err),
+        sanitizeError(err),
+      );
+    }
+    throw err;
+  }
 }
+
 
 export async function recall(
   query: string,
@@ -372,10 +412,29 @@ export const EMPTY_CANDIDATE_CONTEXT: CandidateMemoryContext = {
 
 export async function recallCandidateMemory(
   params: CandidateMemoryRecallParams,
+  /** Optional: pass interviewId to record retrieval metrics in pipeline usage. */
+  interviewId?: string | null,
 ): Promise<CandidateMemoryContext> {
   const empty = EMPTY_CANDIDATE_CONTEXT;
 
+  // ── First-interview optimization ──────────────────────────────────────────
+  // If there is no Cognee memory for this user, skip retrieval entirely.
+  // A failed prior save means nothing to retrieve — SKIPPED is the correct status.
+  if (interviewId) {
+    const hasMemory = await hasCogneeMemory(params.userId);
+    if (!hasMemory) {
+      await markCogneeRetrievalSkipped(interviewId);
+      log("No Cognee memory found — skipping retrieval for first interview");
+      return empty;
+    }
+  }
+
   const t = startTimer();
+  const retrievalStartedAt = Date.now();
+
+  if (interviewId) {
+    await markCogneeRetrievalStart(interviewId);
+  }
 
   logRecallStart({
     purpose: "question-generation",
@@ -397,6 +456,15 @@ export async function recallCandidateMemory(
       count: memories.length,
       durationMs: elapsed(t),
     });
+
+    if (interviewId) {
+      await markCogneeRetrievalSuccess(
+        interviewId,
+        memories.length,
+        0, // Cognee /recall doesn't expose edge counts
+        Date.now() - retrievalStartedAt,
+      );
+    }
 
     if (memories.length === 0) return empty;
 
@@ -420,9 +488,18 @@ export async function recallCandidateMemory(
       reason: reason instanceof Error ? reason.message : String(reason),
       durationMs: elapsed(t),
     });
+    if (interviewId) {
+      await markCogneeRetrievalFailed(
+        interviewId,
+        Date.now() - retrievalStartedAt,
+        classifyFailureReason(reason),
+        sanitizeError(reason),
+      );
+    }
     return empty;
   }
 }
+
 
 // ── Phase 6: recallHistoricalMemory() ────────────────────────────────────
 

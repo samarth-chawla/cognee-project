@@ -2,6 +2,8 @@ import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
 import { saveInterviewAnswer } from "@/services/answer.service";
+import { accumulateDeepgramAudio } from "@/services/pipelineUsage.service";
+
 
 /**
  * Voice Agent interview progression. The Deepgram Voice Agent only conducts the
@@ -122,6 +124,12 @@ export async function saveAnswerAndAdvance(
     transcript: input.transcript,
     duration: Math.round(input.durationSec ?? 0),
   });
+
+  // Accumulate audio seconds for Deepgram cost tracking (best-effort)
+  if (input.durationSec && input.durationSec > 0) {
+    await accumulateDeepgramAudio(input.interviewId, input.durationSec);
+  }
+
 
   // Next question is the one whose sequence directly follows the answered one.
   const nextQuestion =

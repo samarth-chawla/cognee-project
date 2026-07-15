@@ -19,7 +19,9 @@ export function cleanExtractedText(rawText: string): string {
     .trim();
 }
 
-export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult> {
+export async function parseResumePdf(
+  buffer: Buffer,
+): Promise<ResumeParseResult> {
   try {
     const result = await pdf(buffer);
     const rawText = cleanExtractedText(result.text);
@@ -30,11 +32,13 @@ export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult>
       );
     }
 
-    return {
+    const parsed: ResumeParseResult = {
       rawText,
       pageCount: result.numpages,
       charactersExtracted: rawText.length,
     };
+
+    return parsed;
   } catch (error) {
     if (error instanceof ResumeParseError) {
       throw error;
@@ -54,6 +58,7 @@ export async function parseResumePdf(buffer: Buffer): Promise<ResumeParseResult>
     throw new ResumeParseError("Unable to extract text from the uploaded PDF");
   }
 }
+
 
 export class ResumeParseError extends Error {
   constructor(message: string) {

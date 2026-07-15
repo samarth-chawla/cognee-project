@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { evaluateInterview } from "@/services/interview.service";
 import { saveReport, getReport } from "@/services/report.service";
 import { persistInterviewMemory } from "@/services/memory.service";
+import { finalizeUsage } from "@/services/pipelineUsage.service";
 
 export async function GET(request: NextRequest) {
   // 1. Verify Authorization
@@ -96,6 +97,9 @@ export async function GET(request: NextRequest) {
           data: { status: "COMPLETED", completedAt: new Date(), lastError: null },
         });
 
+        // Finalize usage row to compute total costs and mark pipeline SUCCESS
+        await finalizeUsage(job.interviewId, { reportScore: saved.evaluation.overallScore });
+
         // EMAIL DISABLED AS PER USER REQUEST
         // email notification would go here
 
@@ -122,6 +126,8 @@ export async function GET(request: NextRequest) {
               failureReason: failureReason as any
             }
           });
+          
+          await finalizeUsage(job.interviewId, { failed: true });
         } else {
           // Exponential backoff: 1m, 2m, 4m, 8m, 16m...
           const backoffMinutes = Math.pow(2, newRetryCount - 1);

@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
-import { evaluateInterview } from "@/services/interview.service";
-import { persistInterviewMemory } from "@/services/memory.service";
-import { saveReport, getReport } from "@/services/report.service";
-import { withInFlight } from "@/lib/utils/dedup";
-import { toFriendlyError } from "@/lib/utils/errors";
-import { FRIENDLY } from "@/lib/utils/messages";
-import { isRetryableGeminiError } from "@/lib/ai/gemini";
+import { getReport } from "@/services/report.service";
+import { finalizeDeepgram } from "@/services/pipelineUsage.service";
 
 const bodySchema = z.object({
   interviewId: z.string().min(1, "interviewId is required"),
@@ -47,94 +42,49 @@ export async function POST(request: NextRequest) {
 
     const { interviewId } = parsed.data;
 
-    // De-duplicate + make idempotent: the same interview is evaluated at most
-    // once even if /api/interview/end and /api/reports/generate race, or the
-    // client retries. Subsequent calls return the existing report.
+    // De-duplicate + make idempotent: check if report already exists
     try {
-      const report = await withInFlight(`eval:${interviewId}`, async () => {
-        const existing = await prisma.report.findUnique({
-          where: { interviewId },
+      const existing = await prisma.report.findUnique({
+        where: { interviewId },
+      });
+
+      if (existing) {
+        console.log("[Interview] Evaluation already exists — returning cached", {
+          interviewId,
         });
-
-        if (existing) {
-          console.log("[Interview] Evaluation already exists — returning cached", {
-            interviewId,
-          });
-          const cached = await getReport(existing.id);
-          if (cached) {
-            await ensureCompleted(interviewId);
-            return cached;
-          }
+        const cached = await getReport(existing.id);
+        if (cached) {
+          await ensureCompleted(interviewId);
+          return NextResponse.json({ success: true, data: cached });
         }
+      }
 
-        // ── DISTRIBUTED DATABASE LOCK ──────────────────────────────────────────
-        let gotLock = false;
-        try {
-          await prisma.reportGenerationJob.create({
-            data: {
-              interviewId,
-              userId: user.id,
-              status: "PROCESSING",
-              startedAt: new Date(),
-            },
-          });
-          gotLock = true;
-        } catch (e: any) {
-          if (e.code === "P2002") {
-            const updated = await prisma.reportGenerationJob.updateMany({
-              where: {
-                interviewId,
-                status: { in: ["PENDING", "FAILED"] },
-              },
-              data: { status: "PROCESSING", startedAt: new Date() },
-            });
-            if (updated.count > 0) gotLock = true;
-          } else {
-            throw e;
-          }
-        }
+      // ── MARK INTERVIEW COMPLETED SYNCHRONOUSLY ───────────────────────────
+      await ensureCompleted(interviewId);
+      await finalizeDeepgram(interviewId);
 
-        if (!gotLock) {
-          console.log("[Interview] Evaluation already running/queued on another node", { interviewId });
-          return { _isQueuedSentinel: true };
-        }
-
-        console.log("[Interview] Evaluation started", { interviewId });
-
-        const evaluation = await evaluateInterview({
+      // ── QUEUE REPORT GENERATION ──────────────────────────────────────────
+      await prisma.reportGenerationJob.upsert({
+        where: { interviewId },
+        create: {
           interviewId,
           userId: user.id,
-        });
-
-        const saved = await saveReport(user.id, interviewId, evaluation);
-
-        const completedInterview = await prisma.interview.update({
-          where: { id: interviewId },
-          data: { status: "COMPLETED", endedAt: new Date() },
-          select: {
-            userId: true,
-            company: true,
-            customCompanyName: true,
-            role: true,
-            interviewType: true,
-          },
-        });
-
-        // Release lock
-        await prisma.reportGenerationJob.updateMany({
-          where: { interviewId },
-          data: { status: "COMPLETED", completedAt: new Date() },
-        });
-
-        // Best-effort memory — never blocks completion (swallowed inside).
-        await persistInterviewMemory(
-          { ...saved, interview: completedInterview },
-          { historicalTrend: evaluation.historicalProgress?.overallTrend ?? null },
-        );
-
-        console.log("[Interview] Evaluation completed", { interviewId });
-        return saved;
+          status: "PENDING",
+        },
+        update: {}, // If it already exists, leave it as is
       });
+
+      // ── TRIGGER ASYNC PROCESSING ─────────────────────────────────────────
+      // Fire-and-forget request to the cron endpoint to process the pending job immediately
+      const baseUrl = request.nextUrl.origin;
+      fetch(`${baseUrl}/api/cron/process-reports`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.CRON_SECRET || ""}`
+        }
+      }).catch(err => console.error("[Interview] Failed to trigger async report processing", err));
+
+      const report = { _isQueuedSentinel: true };
 
       if ((report as any)._isQueuedSentinel) {
         return NextResponse.json({
@@ -146,46 +96,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, data: report });
     } catch (error: unknown) {
-      console.error("[Interview] Evaluation failed", { error });
-
-      if (isRetryableGeminiError(error)) {
-        try {
-          await prisma.reportGenerationJob.updateMany({
-            where: { interviewId },
-            data: {
-              status: "PENDING",
-              nextRetryAt: new Date(Date.now() + 60000), // Retry in 1 min
-              lastError: error instanceof Error ? error.message : String(error)
-            },
-          });
-          
-          // Ensure interview is marked COMPLETED so it doesn't stay ONGOING
-          await ensureCompleted(interviewId);
-
-          return NextResponse.json({ 
-            success: true, 
-            queued: true,
-            message: "Your interview has been saved successfully. We're currently experiencing high AI demand. Your report will be generated automatically and will appear on your dashboard when it's ready." 
-          });
-        } catch (jobError) {
-          console.error("[Interview] Failed to queue report generation job", { jobError });
-        }
-      } else {
-        // Non-retryable error -> Release lock as FAILED
-        try {
-          await prisma.reportGenerationJob.updateMany({
-            where: { interviewId },
-            data: {
-              status: "FAILED",
-              lastError: error instanceof Error ? error.message : String(error)
-            },
-          });
-        } catch (jobError) {
-          console.error("[Interview] Failed to release lock as FAILED", { jobError });
-        }
-      }
-
-      const message = toFriendlyError(error, FRIENDLY.aiRetry);
+      console.error("[Interview] Evaluation queueing failed", { error });
+      const message = error instanceof Error ? error.message : "Unknown queue error";
       return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
   } catch (globalError) {

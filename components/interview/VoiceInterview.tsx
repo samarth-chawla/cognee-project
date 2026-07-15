@@ -251,10 +251,25 @@ export default function VoiceInterview({
       state === "EVALUATING" ||
       state === "REPORT_READY"
     ) {
-      const t = setTimeout(() => goToReport(), 2500);
+      // Don't set multiple timeouts if state progresses
+      if (navigatedRef.current) return;
+
+      const t = setTimeout(async () => {
+        try {
+          // Trigger the end endpoint to queue the report generation before navigating
+          await fetch(API.interviewEnd, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ interviewId: interview.id }),
+          });
+        } catch (e) {
+          console.error("Failed to trigger natural report generation", e);
+        }
+        goToReport();
+      }, 2500);
       return () => clearTimeout(t);
     }
-  }, [state, goToReport]);
+  }, [state, goToReport, interview.id]);
 
   const progressLabel = useMemo(() => {
     if (totalQuestions === 0) return "Preparing…";

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { withInFlight } from "@/lib/utils/dedup";
+import { finalizeUsage, finalizeDeepgram } from "@/services/pipelineUsage.service";
 
 const bodySchema = z.object({
   interviewId: z.string().min(1),
@@ -84,6 +85,10 @@ export async function POST(request: NextRequest) {
         where: { id: interviewId },
         data: { status: "CANCELLED", endedAt: new Date() },
       });
+
+      // Close out any pending pipeline stages since the interview was cancelled
+      await finalizeDeepgram(interviewId, { failed: true });
+      await finalizeUsage(interviewId, { failed: true });
     });
 
     return NextResponse.json({ success: true });

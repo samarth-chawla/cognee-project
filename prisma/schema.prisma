@@ -122,6 +122,7 @@ model Interview {
   answer           Answer?
   report           Report?
   reportGenerationJob ReportGenerationJob?
+  pipelineUsage    InterviewPipelineUsage?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -229,4 +230,153 @@ model ReportGenerationJob {
 
   @@index([status, nextRetryAt])
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pipeline Observability
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PipelineStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+enum PipelineFailureReason {
+  NONE
+  RATE_LIMITED
+  TIMEOUT
+  NETWORK_ERROR
+  SERVICE_UNAVAILABLE
+  DATABASE_ERROR
+  AUTH_ERROR
+  PROVIDER_ERROR
+  INVALID_INPUT
+  UNKNOWN
+}
+
+/**
+ * One-to-one with Interview.
+ * Tracks cost, latency, tokens, provider health, and failure data for every
+ * stage of the Clutchly AI pipeline.
+ * Used by: Admin Dashboard, AI Cost Tracking, Billing Analytics, Provider Health.
+ */
+model InterviewPipelineUsage {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId      String
+
+  // ── Overall Pipeline ──────────────────────────────────────────────────────
+  pipelineStatus          PipelineStatus @default(PENDING)
+  pipelineStartedAt       DateTime?
+  pipelineCompletedAt     DateTime?
+  totalPipelineDurationMs Int            @default(0)
+  totalPipelineCostUsd    Decimal        @default(0) @db.Decimal(12, 8)
+  currency                String         @default("USD")
+  pricingVersion          String         @default("")
+  pipelineVersion         String         @default("")
+  isFirstInterview        Boolean        @default(false)
+
+  // ── Interview Metadata (denormalized for dashboards — no joins needed) ────
+  role          String?
+  company       String?
+  difficulty    String?
+  interviewMode String?
+  reportScore   Float?
+
+  // ── Question Generation (Gemini) ──────────────────────────────────────────
+  questionGenerationStatus        PipelineStatus        @default(PENDING)
+  questionGenerationFailureReason PipelineFailureReason @default(NONE)
+  questionGenerationLastError     String?
+  questionGenerationAttemptCount  Int                   @default(0)
+  questionGenerationRetryCount    Int                   @default(0)
+  questionGenerationStartedAt     DateTime?
+  questionGenerationCompletedAt   DateTime?
+  questionGenerationDurationMs    Int                   @default(0)
+  questionGenerationProvider      String                @default("Gemini")
+  geminiModel                     String?
+  geminiInputTokens               Int                   @default(0)
+  geminiOutputTokens              Int                   @default(0)
+  geminiTotalTokens               Int                   @default(0)
+  geminiInputCostUsd              Decimal               @default(0) @db.Decimal(12, 8)
+  geminiOutputCostUsd             Decimal               @default(0) @db.Decimal(12, 8)
+  geminiTotalCostUsd              Decimal               @default(0) @db.Decimal(12, 8)
+
+  // ── Voice Interview (Deepgram Voice Agent API) ────────────────────────────
+  deepgramStatus        PipelineStatus        @default(PENDING)
+  deepgramFailureReason PipelineFailureReason @default(NONE)
+  deepgramLastError     String?
+  deepgramAttemptCount  Int                   @default(0)
+  deepgramRetryCount    Int                   @default(0)
+  deepgramStartedAt     DateTime?
+  deepgramCompletedAt   DateTime?
+  deepgramDurationMs    Int                   @default(0)
+  deepgramProvider      String                @default("Deepgram")
+  deepgramModel         String?
+  deepgramAudioSeconds  Float                 @default(0)
+  deepgramCostUsd       Decimal               @default(0) @db.Decimal(12, 8)
+
+  // ── Report Generation (Gemini) ────────────────────────────────────────────
+  reportGenerationStatus        PipelineStatus        @default(PENDING)
+  reportGenerationFailureReason PipelineFailureReason @default(NONE)
+  reportGenerationLastError     String?
+  reportGenerationAttemptCount  Int                   @default(0)
+  reportGenerationRetryCount    Int                   @default(0)
+  reportGenerationStartedAt     DateTime?
+  reportGenerationCompletedAt   DateTime?
+  reportGenerationDurationMs    Int                   @default(0)
+  reportGenerationProvider      String                @default("Gemini")
+  reportGeminiModel             String?
+  reportInputTokens             Int                   @default(0)
+  reportOutputTokens            Int                   @default(0)
+  reportTotalTokens             Int                   @default(0)
+  reportSizeBytes               Int                   @default(0)
+  reportInputCostUsd            Decimal               @default(0) @db.Decimal(12, 8)
+  reportOutputCostUsd           Decimal               @default(0) @db.Decimal(12, 8)
+  reportTotalCostUsd            Decimal               @default(0) @db.Decimal(12, 8)
+
+  // ── Cognee Save ───────────────────────────────────────────────────────────
+  cogneeSaveStatus        PipelineStatus        @default(PENDING)
+  cogneeSaveFailureReason PipelineFailureReason @default(NONE)
+  cogneeSaveLastError     String?
+  cogneeSaveAttemptCount  Int                   @default(0)
+  cogneeSaveRetryCount    Int                   @default(0)
+  cogneeSaveStartedAt     DateTime?
+  cogneeSaveCompletedAt   DateTime?
+  cogneeSaveDurationMs    Int                   @default(0)
+  cogneeProvider          String                @default("Cognee")
+  cogneeNodesCreated      Int                   @default(0)
+  cogneeEdgesCreated      Int                   @default(0)
+  cogneeSaveCostUsd       Decimal               @default(0) @db.Decimal(12, 8)
+
+  // ── Cognee Retrieval ──────────────────────────────────────────────────────
+  cogneeRetrievalStatus        PipelineStatus        @default(PENDING)
+  cogneeRetrievalFailureReason PipelineFailureReason @default(NONE)
+  cogneeRetrievalLastError     String?
+  cogneeRetrievalAttemptCount  Int                   @default(0)
+  cogneeRetrievalRetryCount    Int                   @default(0)
+  cogneeRetrievalStartedAt     DateTime?
+  cogneeRetrievalCompletedAt   DateTime?
+  cogneeRetrievalDurationMs    Int                   @default(0)
+  cogneeRetrievedNodes         Int                   @default(0)
+  cogneeRetrievedEdges         Int                   @default(0)
+  cogneeRetrievalCostUsd       Decimal               @default(0) @db.Decimal(12, 8)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([interviewId])
+  @@index([createdAt])
+  @@index([pipelineStatus])
+  @@index([questionGenerationStatus])
+  @@index([reportGenerationStatus])
+  @@index([deepgramStatus])
+  @@index([cogneeSaveStatus])
+  @@index([cogneeRetrievalStatus])
+  @@index([isFirstInterview])
+  @@index([userId, createdAt])
 }

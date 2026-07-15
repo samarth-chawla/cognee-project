@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { isDeepgramConfigured } from "@/lib/deepgram/client";
 import { createDeepgramToken } from "@/services/deepgram.service";
 import { success, failure, unauthorized } from "@/lib/utils/api";
+import { markDeepgramStart } from "@/services/pipelineUsage.service";
 
 const AGENT_TOKEN_TTL_SECONDS = 300;
 
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
     }
 
     const token = await createDeepgramToken(AGENT_TOKEN_TTL_SECONDS);
+
+    if (interviewId) {
+      await markDeepgramStart(interviewId);
+    }
+
     return success(token);
   } catch (reason) {
     const message =

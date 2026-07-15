@@ -139,3 +139,93 @@ export async function geminiComplete(
   });
   throw lastError;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Usage-aware variant (for pipeline cost tracking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface GeminiUsageResult {
+  text: string;
+  /** Model that actually produced the response (may differ from requested if fallback triggered) */
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+/**
+ * Like geminiComplete() but also returns token usage metadata from the SDK.
+ * Use this whenever the caller needs to track cost (question generation, report generation).
+ *
+ * The SDK's response.usageMetadata provides:
+ *   promptTokenCount     → inputTokens
+ *   candidatesTokenCount → outputTokens
+ *   totalTokenCount      → totalTokens
+ *
+ * Falls back to 0 if the SDK omits usageMetadata (shouldn't happen in practice).
+ */
+export async function geminiCompleteWithUsage(
+  system: string,
+  user: string,
+  opts: { json?: boolean; model?: string } = {},
+): Promise<GeminiUsageResult> {
+  const requestedModel = opts.model ?? DEFAULT_MODELS.gemini;
+  const modelsToTry = [
+    requestedModel,
+    ...GEMINI_FALLBACK_MODELS.filter((model) => model !== requestedModel),
+  ];
+
+  let lastError: unknown;
+
+  for (const modelName of modelsToTry) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      if (attempt > 1) {
+        const waitMs = BACKOFF_MS[attempt - 2];
+        if (waitMs > 0) {
+          console.warn("[Gemini] Retry", `${attempt}/${MAX_ATTEMPTS}`, {
+            model: modelName,
+            afterMs: waitMs,
+          });
+          await sleep(waitMs);
+        }
+      }
+
+      try {
+        const model = getGemini().getGenerativeModel({
+          model: modelName,
+          systemInstruction: system,
+          ...(opts.json
+            ? { generationConfig: { responseMimeType: "application/json" } }
+            : {}),
+        });
+        const res = await model.generateContent(user);
+        const usage = res.response.usageMetadata;
+
+        return {
+          text: res.response.text(),
+          model: modelName,
+          inputTokens: usage?.promptTokenCount ?? 0,
+          outputTokens: usage?.candidatesTokenCount ?? 0,
+          totalTokens: usage?.totalTokenCount ?? 0,
+        };
+      } catch (error) {
+        lastError = error;
+
+        if (isGeminiModelNotFoundError(error)) {
+          console.warn("[Gemini] model unavailable; trying fallback", { model: modelName });
+          break;
+        }
+
+        if (!isRetryableGeminiError(error)) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  console.error("[Gemini] all models exhausted (with usage)", {
+    requestedModel,
+    modelsTried: modelsToTry.length,
+  });
+  throw lastError;
+}

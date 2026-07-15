@@ -2,7 +2,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Difficulty, InterviewStatus } from "@prisma/client";
 import { ActiveInterviewError } from "@/lib/errors/ActiveInterviewError";
 import { getLimits, getUsageWindowBounds } from "@/lib/config/limits";
-import { complete, parseJSON } from "@/lib/ai";
+import { parseJSON } from "@/lib/ai";
+import { geminiCompleteWithUsage } from "@/lib/ai/gemini";
 import {
   buildEvaluationPrompt,
   evaluationSystemPrompt,
@@ -19,6 +20,14 @@ import {
 } from "@/lib/cognee/logger";
 import { uid } from "@/lib/utils";
 import type { Evaluation } from "@/types";
+import {
+  markReportGenerationStart,
+  markReportGenerationSuccess,
+  markReportGenerationFailed,
+  classifyFailureReason,
+} from "@/services/pipelineUsage.service";
+import { sanitizeError } from "@/lib/ai/pricing";
+
 
 
 /** Evaluate answered questions and return a structured evaluation. */
@@ -87,17 +96,41 @@ export async function evaluateInterview(params: {
   logEvaluationStart({ interviewId, hasHistory: historicalMemory.count > 0 });
 
   const company = resolveCompanyName(interview);
+  const reportStartedAt = Date.now();
 
-  const raw = await complete(
-    evaluationSystemPrompt,
-    buildEvaluationPrompt({
-      role: interview.role,
-      qa,
-      company,
-      historicalContextBlock,
-    }),
-    { json: true },
-  );
+  // Track report generation stage (best-effort)
+  await markReportGenerationStart(interviewId);
+
+  let raw: string;
+  let reportUsage: { model: string; inputTokens: number; outputTokens: number; totalTokens: number };
+
+  try {
+    const result = await geminiCompleteWithUsage(
+      evaluationSystemPrompt,
+      buildEvaluationPrompt({
+        role: interview.role,
+        qa,
+        company,
+        historicalContextBlock,
+      }),
+      { json: true },
+    );
+    raw = result.text;
+    reportUsage = {
+      model: result.model,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      totalTokens: result.totalTokens,
+    };
+  } catch (err) {
+    await markReportGenerationFailed(
+      interviewId,
+      Date.now() - reportStartedAt,
+      classifyFailureReason(err),
+      sanitizeError(err),
+    );
+    throw err;
+  }
 
   // Issue #5: defensive final pass — never let a "[Company Name]" placeholder
   // survive into the evaluation the candidate sees.
@@ -111,6 +144,13 @@ export async function evaluateInterview(params: {
     hasHistoricalProgress: Boolean(parsed.historicalProgress),
     durationMs: elapsed(evalTimer),
   });
+
+  await markReportGenerationSuccess(
+    interviewId,
+    reportUsage,
+    Buffer.byteLength(sanitizedRaw, "utf8"),
+    Date.now() - reportStartedAt,
+  );
 
   if (parsed.historicalProgress) {
     debug("Historical comparison generated", {
