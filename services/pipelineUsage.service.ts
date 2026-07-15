@@ -14,7 +14,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
-import { PipelineStatus, PipelineFailureReason, Prisma } from "@prisma/client";
+import { PipelineStatus, PipelineFailureReason, PipelineExecutionStatus, PipelineAbortReason, Prisma } from "@prisma/client";
 import {
   calculateGeminiCost,
   calculateDeepgramCost,
@@ -86,7 +86,7 @@ export async function initPipelineUsage(
       create: {
         interviewId,
         userId,
-        pipelineStatus: PipelineStatus.PENDING,
+        pipelineStatus: PipelineExecutionStatus.PROCESSING,
         pipelineStartedAt: new Date(),
         pricingVersion: getCurrentPricingVersion(),
         pipelineVersion: PIPELINE_VERSION,
@@ -426,6 +426,67 @@ export async function finalizeDeepgram(
 }
 
 
+export async function abortPipeline(params: {
+  interviewId: string;
+  reason: PipelineAbortReason;
+  completedBy: string;
+}): Promise<void> {
+  const { interviewId, reason, completedBy } = params;
+  try {
+    const row = await prisma.interviewPipelineUsage.findUnique({
+      where: { interviewId },
+    });
+    if (!row) return;
+
+    if (row.deepgramStatus === PipelineStatus.PROCESSING) {
+      await finalizeDeepgram(interviewId, { failed: true });
+    }
+
+    let executionStatus: PipelineExecutionStatus = PipelineExecutionStatus.FAILED;
+    if (reason === "USER_CANCELLED") executionStatus = PipelineExecutionStatus.CANCELLED;
+    if (reason === "STALE_TIMEOUT") executionStatus = PipelineExecutionStatus.ABANDONED;
+
+    const freshRow = await prisma.interviewPipelineUsage.findUnique({
+      where: { interviewId },
+    });
+    if (!freshRow) return;
+
+    const updateData: Prisma.InterviewPipelineUsageUpdateInput = {};
+
+    const normalize = (field: keyof typeof freshRow) => {
+      if (freshRow[field] === PipelineStatus.PROCESSING) return PipelineStatus.FAILED;
+      if (freshRow[field] === PipelineStatus.PENDING) return PipelineStatus.SKIPPED;
+      return undefined;
+    };
+
+    const qGen = normalize("questionGenerationStatus");
+    if (qGen) updateData.questionGenerationStatus = qGen;
+
+    const dgram = normalize("deepgramStatus");
+    if (dgram) updateData.deepgramStatus = dgram;
+
+    const rGen = normalize("reportGenerationStatus");
+    if (rGen) updateData.reportGenerationStatus = rGen;
+
+    const cSave = normalize("cogneeSaveStatus");
+    if (cSave) updateData.cogneeSaveStatus = cSave;
+
+    const cRet = normalize("cogneeRetrievalStatus");
+    if (cRet) updateData.cogneeRetrievalStatus = cRet;
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.interviewPipelineUsage.update({
+        where: { interviewId },
+        data: updateData,
+      });
+    }
+
+    await finalizeUsage(interviewId, { executionStatus, reason, completedBy });
+  } catch (err) {
+    console.error("[PipelineUsage] abortPipeline failed", { interviewId, err });
+  }
+}
+
 /**
  * Seal the pipeline usage row after the interview fully completes.
  * Computes totalPipelineCostUsd, totalPipelineDurationMs, pipelineStatus,
@@ -433,18 +494,18 @@ export async function finalizeDeepgram(
  */
 export async function finalizeUsage(
   interviewId: string,
-  opts?: { reportScore?: number; failed?: boolean },
+  opts: { 
+    executionStatus: PipelineExecutionStatus;
+    completedBy: string;
+    reason?: PipelineAbortReason;
+    reportScore?: number; 
+  },
 ): Promise<void> {
   try {
     const row = await prisma.interviewPipelineUsage.findUnique({
       where: { interviewId },
       select: {
         pipelineStartedAt: true,
-        questionGenerationStatus: true,
-        deepgramStatus: true,
-        reportGenerationStatus: true,
-        cogneeSaveStatus: true,
-        cogneeRetrievalStatus: true,
         geminiTotalCostUsd: true,
         reportTotalCostUsd: true,
         deepgramCostUsd: true,
@@ -458,43 +519,7 @@ export async function finalizeUsage(
       return;
     }
 
-    const stages = [
-      { name: "questionGeneration", status: row.questionGenerationStatus },
-      { name: "deepgram", status: row.deepgramStatus },
-      { name: "reportGeneration", status: row.reportGenerationStatus },
-      { name: "cogneeSave", status: row.cogneeSaveStatus },
-      { name: "cogneeRetrieval", status: row.cogneeRetrievalStatus },
-    ];
-
-    // Issue #6: If ANY stage is PROCESSING, DO NOT finalize.
-    const processingStages = stages.filter((s) => s.status === PipelineStatus.PROCESSING);
-    if (processingStages.length > 0) {
-      console.error("[PipelineUsage] finalizeUsage: Cannot finalize, stages still PROCESSING", {
-        interviewId,
-        processingStages: processingStages.map(s => s.name)
-      });
-      return;
-    }
-
-    // Issues #4 & #5: Handle PENDING stages (e.g. from cancelled interview or early failure)
-    const pendingStages = stages.filter((s) => s.status === PipelineStatus.PENDING);
-    if (pendingStages.length > 0) {
-      console.error("[PipelineUsage] finalizeUsage: Cannot finalize, stages still PENDING", {
-        interviewId,
-        pendingStages: pendingStages.map(s => s.name)
-      });
-      return;
-    }
-
     const now = new Date();
-    const updateData: Prisma.InterviewPipelineUsageUpdateInput = {};
-
-    // Determine pipeline status based on all stages and explicit opts.failed flag
-    const hasFailed = stages.some((s) => s.status === PipelineStatus.FAILED);
-    const finalPipelineStatus = (hasFailed || opts?.failed) 
-      ? PipelineStatus.FAILED 
-      : PipelineStatus.SUCCESS;
-
     const startedAt = row.pipelineStartedAt ?? now;
     const totalDurationMs = now.getTime() - startedAt.getTime();
 
@@ -509,12 +534,13 @@ export async function finalizeUsage(
     await prisma.interviewPipelineUsage.update({
       where: { interviewId },
       data: {
-        ...updateData,
-        pipelineStatus: finalPipelineStatus,
+        pipelineStatus: opts.executionStatus,
+        pipelineCompletedBy: opts.completedBy,
+        ...(opts.reason ? { pipelineAbortReason: opts.reason } : {}),
         pipelineCompletedAt: now,
         totalPipelineDurationMs: totalDurationMs,
         totalPipelineCostUsd: new Prisma.Decimal(totalCost),
-        ...(opts?.reportScore !== undefined ? { reportScore: opts.reportScore } : {}),
+        ...(opts.reportScore !== undefined ? { reportScore: opts.reportScore } : {}),
       },
     });
   } catch (err) {

@@ -84,7 +84,7 @@ export async function persistInterviewMemory(
   try {
     // Pass memory.userId so memories go into the user's own Cognee dataset.
     // Without this, all users share one dataset and concurrent writes cause 409 conflicts.
-    const result = await rememberInCognee(memory, memory.userId);
+    const result = await rememberInCognee(memory, memory.userId, memory.interviewId);
     const memoryId = getRememberResultId(result);
     logRememberComplete({
       interviewId: memory.interviewId,

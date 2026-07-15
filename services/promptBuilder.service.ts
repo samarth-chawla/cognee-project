@@ -23,6 +23,7 @@ import {
 } from "@/lib/cognee/logger";
 
 type PromptInterview = {
+  id: string;
   userId: string;
   role: string;
   company?: string | null;
@@ -66,9 +67,8 @@ export async function prepareInterviewPrompt(interview: PromptInterview): Promis
         }
       }
     } else {
-      jdText = `Skills: ${interview.jobDescription.parsedSkills.join(", ")}\nText: ${
-        interview.jobDescription.rawText?.substring(0, 500) || ""
-      }`;
+      jdText = `Skills: ${interview.jobDescription.parsedSkills.join(", ")}\nText: ${interview.jobDescription.rawText?.substring(0, 500) || ""
+        }`;
     }
   }
 
@@ -80,15 +80,15 @@ export async function prepareInterviewPrompt(interview: PromptInterview): Promis
     where: { userId: interview.userId, status: "COMPLETED" },
   });
 
-  const candidateMemory =
-    priorCompleted > 0
-      ? await recallCandidateMemory({
-          userId: interview.userId,
-          role: interview.role,
-          company: interview.customCompanyName || interview.company,
-          interviewType: interview.interviewType,
-        })
-      : EMPTY_CANDIDATE_CONTEXT;
+  const candidateMemory = await recallCandidateMemory(
+    {
+      userId: interview.userId,
+      role: interview.role,
+      company: interview.customCompanyName || interview.company,
+      interviewType: interview.interviewType,
+    },
+    interview.id
+  );
 
   // ── 3. Build prompt ───────────────────────────────────────────────────────
   const prompt = buildInterviewGenerationPrompt({

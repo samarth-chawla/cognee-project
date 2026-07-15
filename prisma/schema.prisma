@@ -236,12 +236,29 @@ model ReportGenerationJob {
 // Pipeline Observability
 // ─────────────────────────────────────────────────────────────────────────────
 
+enum PipelineExecutionStatus {
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+  ABANDONED
+}
+
 enum PipelineStatus {
   PENDING
   PROCESSING
   SUCCESS
   FAILED
   SKIPPED
+}
+
+enum PipelineAbortReason {
+  USER_CANCELLED
+  REPORT_FAILED
+  STALE_TIMEOUT
+  PIPELINE_ERROR
+  INTERVIEW_FAILED
+  SYSTEM_SHUTDOWN
 }
 
 enum PipelineFailureReason {
@@ -270,7 +287,9 @@ model InterviewPipelineUsage {
   userId      String
 
   // ── Overall Pipeline ──────────────────────────────────────────────────────
-  pipelineStatus          PipelineStatus @default(PENDING)
+  pipelineStatus          PipelineExecutionStatus @default(PROCESSING)
+  pipelineAbortReason     PipelineAbortReason?
+  pipelineCompletedBy     String?
   pipelineStartedAt       DateTime?
   pipelineCompletedAt     DateTime?
   totalPipelineDurationMs Int            @default(0)

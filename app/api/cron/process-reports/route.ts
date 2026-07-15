@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db/prisma";
 import { evaluateInterview } from "@/services/interview.service";
 import { saveReport, getReport } from "@/services/report.service";
 import { persistInterviewMemory } from "@/services/memory.service";
-import { finalizeUsage } from "@/services/pipelineUsage.service";
+import { finalizeUsage, abortPipeline } from "@/services/pipelineUsage.service";
+import { PipelineExecutionStatus } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   // 1. Verify Authorization
@@ -98,7 +99,11 @@ export async function GET(request: NextRequest) {
         });
 
         // Finalize usage row to compute total costs and mark pipeline SUCCESS
-        await finalizeUsage(job.interviewId, { reportScore: saved.evaluation.overallScore });
+        await finalizeUsage(job.interviewId, { 
+          executionStatus: PipelineExecutionStatus.SUCCESS,
+          completedBy: "SYSTEM",
+          reportScore: saved.evaluation.overallScore 
+        });
 
         // EMAIL DISABLED AS PER USER REQUEST
         // email notification would go here
@@ -127,7 +132,11 @@ export async function GET(request: NextRequest) {
             }
           });
           
-          await finalizeUsage(job.interviewId, { failed: true });
+          await abortPipeline({
+            interviewId: job.interviewId,
+            reason: "REPORT_FAILED",
+            completedBy: "ERROR_HANDLER"
+          });
         } else {
           // Exponential backoff: 1m, 2m, 4m, 8m, 16m...
           const backoffMinutes = Math.pow(2, newRetryCount - 1);
