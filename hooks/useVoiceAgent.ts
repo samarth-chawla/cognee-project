@@ -696,10 +696,25 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
   const handleMessage = useCallback(
     (msg: AgentServerMessage) => {
       switch (msg.type) {
-        case "Welcome":
-          log("event: Welcome");
+        case "Welcome": {
+          log("event: Welcome", msg);
+          const requestId = (msg.request_id ?? msg.requestId) as string | undefined;
+          if (requestId && interviewIdRef.current) {
+            fetch("/api/interview/voice/session-id", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                interviewId: interviewIdRef.current,
+                requestId,
+                source: "client_welcome",
+              }),
+            }).catch((err) => {
+              console.warn("[VoiceAgent] Failed to capture requestId:", err);
+            });
+          }
           transition("READY", "agent websocket ready");
           break;
+        }
 
         case "SettingsApplied": {
           log("event: SettingsApplied");

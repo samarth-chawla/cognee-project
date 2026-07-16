@@ -222,6 +222,17 @@ export async function markDeepgramSuccess(
     deepgramDurationMs: durationMs,
     deepgramAudioSeconds: totalAudioSeconds,
     deepgramCostUsd: new Prisma.Decimal(cost),
+    deepgramCostEstimateUsd: new Prisma.Decimal(cost),
+  });
+}
+
+export async function updateDeepgramReconciledCost(
+  interviewId: string,
+  actualCostUsd: number,
+): Promise<void> {
+  await updateStage(interviewId, {
+    deepgramCostUsd: new Prisma.Decimal(actualCostUsd),
+    deepgramCostReconciledAt: new Date(),
   });
 }
 

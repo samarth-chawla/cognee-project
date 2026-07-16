@@ -123,6 +123,7 @@ model Interview {
   report           Report?
   reportGenerationJob ReportGenerationJob?
   pipelineUsage    InterviewPipelineUsage?
+  deepgramSessions DeepgramSession[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -336,7 +337,13 @@ model InterviewPipelineUsage {
   deepgramProvider      String                @default("Deepgram")
   deepgramModel         String?
   deepgramAudioSeconds  Float                 @default(0)
-  deepgramCostUsd       Decimal               @default(0) @db.Decimal(12, 8)
+  /// Best available cost. Written as the STT estimate at session end;
+  /// overwritten by the nightly reconciliation job with the real billed amount.
+  deepgramCostUsd             Decimal  @default(0) @db.Decimal(12, 8)
+  /// Original STT-only formula cost — kept forever for debugging/comparison.
+  deepgramCostEstimateUsd     Decimal  @default(0) @db.Decimal(12, 8)
+  /// Timestamp of the last successful nightly reconciliation for this interview.
+  deepgramCostReconciledAt    DateTime?
 
   // ── Report Generation (Gemini) ────────────────────────────────────────────
   reportGenerationStatus        PipelineStatus        @default(PENDING)
@@ -387,6 +394,8 @@ model InterviewPipelineUsage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  deepgramSessions DeepgramSession[] @relation("PipelineUsageDeepgramSessions")
+
   @@index([userId])
   @@index([interviewId])
   @@index([createdAt])
@@ -398,4 +407,44 @@ model InterviewPipelineUsage {
   @@index([cogneeRetrievalStatus])
   @@index([isFirstInterview])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deepgram Session Tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Stores every Deepgram Voice Agent WebSocket requestId per interview.
+ * One row per connection — retries create separate rows with connectionNumber > 1.
+ * The nightly reconciliation cron reads Deepgram's Usage API per requestId and
+ * writes the actual billed cost to reconciledCostUsd, then aggregates into
+ * InterviewPipelineUsage.deepgramCostUsd.
+ */
+model DeepgramSession {
+  id               String   @id @default(cuid())
+  interviewId      String
+  interview        Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  pipelineUsageId  String?
+  pipelineUsage    InterviewPipelineUsage? @relation("PipelineUsageDeepgramSessions", fields: [pipelineUsageId], references: [id], onDelete: SetNull)
+  userId           String
+
+  /// Deepgram's globally-unique UUID for this WebSocket connection.
+  requestId        String   @unique
+  /// 1 = first attempt, 2 = retry, etc.
+  connectionNumber Int      @default(1)
+  capturedAt       DateTime @default(now())
+  /// "client_welcome" = extracted from WebSocket Welcome event on client.
+  captureSource    String   @default("client_welcome")
+
+  // Filled by the nightly reconciliation job.
+  reconciledCostUsd Decimal? @db.Decimal(12, 8)
+  reconciledAt      DateTime?
+  /// After 7 days with no Deepgram match, stop retrying and use the STT estimate.
+  unrecoverable     Boolean  @default(false)
+  unrecoverableAt   DateTime?
+
+  @@index([interviewId])
+  @@index([requestId])
+  @@index([reconciledAt])
+  @@index([unrecoverable])
 }
