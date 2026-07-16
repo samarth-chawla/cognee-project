@@ -8,7 +8,7 @@
 
 export type UsageWindow = "day" | "week" | "month";
 
-export const MAX_INTERVIEWS = 3;
+export const MAX_INTERVIEWS = 10;
 export const USAGE_WINDOW: UsageWindow = "month";
 
 export function getLimits() {
