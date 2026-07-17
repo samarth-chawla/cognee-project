@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clutchly | Social Proof</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#2f3132",
+                        "secondary-fixed": "#e4dfff",
+                        "surface-container-highest": "#e2e2e4",
+                        "on-surface-variant": "#464555",
+                        "primary-fixed": "#e2dfff",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#8c80ff",
+                        "error": "#ba1a1a",
+                        "primary-container": "#635bff",
+                        "tertiary-fixed": "#e4e1e7",
+                        "surface-bright": "#f9f9fb",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "inverse-primary": "#c3c0ff",
+                        "on-surface": "#1a1c1d",
+                        "secondary": "#584ac9",
+                        "outline": "#777587",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#22008e",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#c6bfff",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#1b1b1f",
+                        "surface-container-low": "#f3f3f5",
+                        "on-background": "#1a1c1d",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f0f0f2",
+                        "on-tertiary-container": "#fefaff",
+                        "surface-variant": "#e2e2e4",
+                        "surface-container": "#edeef0",
+                        "on-primary-fixed-variant": "#321ed2",
+                        "on-secondary-fixed-variant": "#402fb0",
+                        "surface-dim": "#d9dadc",
+                        "surface-container-high": "#e8e8ea",
+                        "tertiary": "#5c5a60",
+                        "tertiary-fixed-dim": "#c8c5cb",
+                        "tertiary-container": "#747378",
+                        "surface-tint": "#4c42e9",
+                        "on-secondary-fixed": "#150066",
+                        "primary": "#493ee5",
+                        "surface": "#f9f9fb",
+                        "on-primary-container": "#fefaff",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#c7c4d8",
+                        "on-tertiary-fixed-variant": "#47464b",
+                        "on-primary-fixed": "#0f0069",
+                        "on-error-container": "#93000a",
+                        "background": "#f9f9fb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "base": "4px",
+                        "sm": "16px",
+                        "xs": "8px",
+                        "lg": "48px",
+                        "margin-desktop": "64px",
+                        "max-width": "1280px",
+                        "xl": "80px",
+                        "md": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Bricolage Grotesque"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "label-sm": ["Bricolage Grotesque"],
+                        "body-lg": ["Bricolage Grotesque"],
+                        "label-md": ["Bricolage Grotesque"],
+                        "headline-lg": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "body-md": ["Bricolage Grotesque"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["36px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "headline-sm": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .premium-shadow {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        }
+        .premium-shadow-hover:hover {
+            box-shadow: 0 15px 50px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .dotted-path {
+            background-image: radial-gradient(#635BFF 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.1;
+        }
+        .gradient-blur {
+            filter: blur(80px);
+        }
+        .mask-fade {
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-primary/20">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md dark:bg-surface-dim/80 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+<div class="max-w-[1280px] mx-auto px-margin-desktop flex justify-between items-center h-20">
+<div class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed-dim">Clutchly</div>
+<div class="hidden md:flex items-center gap-xl">
+<a class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim font-bold border-b-2 border-primary" href="#">Platform</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Resources</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Pricing</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Enterprise</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="hidden sm:block font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Log In</button>
+<button class="bg-primary text-on-primary px-sm py-xs rounded-full font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 duration-200">Start Free Trial</button>
+</div>
+</div>
+</nav>
+<main class="relative pt-32 pb-xl overflow-hidden bg-[#F8F8FA]">
+<!-- Decorative Elements -->
+<div class="absolute top-0 left-1/4 w-[400px] h-[400px] bg-primary/10 gradient-blur rounded-full opacity-50 -z-10"></div>
+<div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-secondary/10 gradient-blur rounded-full opacity-50 -z-10"></div>
+<div class="absolute inset-0 dotted-path -z-20"></div>
+<div class="max-w-[1280px] mx-auto px-margin-desktop flex flex-col items-center">
+<!-- Badge -->
+<div class="mb-md bg-surface-container-lowest border border-surface-variant px-sm py-2 rounded-full flex items-center gap-2 premium-shadow animate-fade-in-up">
+<span class="text-xs">✨</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Trusted by aspiring engineers worldwide</span>
+</div>
+<!-- Main Heading -->
+<h1 class="font-headline-lg text-headline-lg text-center max-w-3xl mb-xl">
+                Trusted by candidates preparing for interviews at
+            </h1>
+<!-- Logos -->
+<div class="w-full flex flex-wrap justify-center items-center gap-xl md:gap-24 mb-xl grayscale opacity-50 mask-fade">
+<img class="h-8 object-contain" data-alt="Monochrome vector logo of Google in a high-tech minimalist style, crisp edges, clean professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwL04QXO5wZC5NLqKzIukD_Is3O1woE5WA4HkGzBrXfrlUb8ulyd58W3Hso61LHw5NhSXkguBed-tCpbjv7ncSGUAw1uv__ZAawkj9Zgp2SaPgUGGf5Ycl0___A0PkwgjIwR3lQLVJaItwxCBf2UXMx2EsMFDzGkRVPvIIBGkm8_MYG8_UvxWg34SgQfhAwBA5O7c8e9DlzKi-UTg6gn6qfTz6bPLTsGrR9hSXD2Y5LPe33O9H2VCbVmeeiGfUef-UyZGQ0-bXnz0"/>
+<img class="h-8 object-contain" data-alt="Monochrome vector logo of Amazon in a premium minimalist fintech style, high clarity and refined professional finish." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAebF31Uf9bcD7-KUCDXfg1vA3YxMdv_iP3UpqeSQJTBwEVumu8mmGJ2cLnukkTyGCqSl6ucNHzV37AtRWBHXcvbMB5Syfcg3J30wwLVetrEgZ9RC1U8U4oTuW6QX76xVJgOe9ZpMzcfTp_aU8s4SBxih54MW9s2OWnZJFpQE9dHCslIiasOxnky8VwLN3TYGm6xD0HRxi-RIu6EeGoiuBopctRpE3zD7ZdIgCxhgmfHuYlTPSlzVWXyPjKfNuxUoGdCziTCKGNnmA"/>
+<img class="h-8 object-contain" data-alt="Monochrome vector logo of Microsoft in a modern tech-forward style, perfectly aligned for a clean corporate UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSbzPjUbQIN5Qb8LKjOfK4GfEHufJ5VQ18k6Oh-zAMMs_U9vwhVUVlp6ai_ztaJ7PJawri-izR4TtmF7HtOD5rOut2wVjfc0blUZ_HrSkWd1bx0K3LjkiDVJ4CYsYddX628_AVVjs_vXkvfLYbYtmmNFMWp9rqowmGLHdaWKy6VWKw6kVOEeiynIF7nyFFzd4RZFD2EcC5EQ74W9j93hzr-L423cw5EpyVinzZHNuW5hm-c6tXw_KRlCj3I3qGRn8I_4fE_kTotzg"/>
+<img class="h-8 object-contain" data-alt="Monochrome vector logo of Meta in a sleek digital minimalist design, consistent weight and professional appearance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6VkM4PC-hCiqd0HbW3udEoCizhl0bNWyIEnBYct-CvX3XeQkbFvyua8kPfACHCZ-FxopwnPLg7s2kKMDoVgUAbQa1C5DP_0zzdRucVgWYwF-QZYIqnwUQQav2ESJ__M9KKcYkTmHGVsnuOQdJDhvMEKxEbFovCoaSUdMOXQzClSYzXHzwMJ5LbxDpiKG-MnVb6PuiEMKpTvfdw3-w4fQaUxPM0047mIyM2boz5Z2MWVBW7sIllg8oE81UQcJFPztkmYm8e4Qv6dk"/>
+<img class="h-8 object-contain" data-alt="Monochrome vector logo of Stripe in a developer-centric aesthetic, emphasizing precision and modern high-growth branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRlQszEWBFYbDiWNSWZvxM2ZZpSP64LOVBdQgL_nMnoQGCnRXy6VGGUXiEOcL7EtKFRC2SNaHusUdgUjSMEkTo6YRY_tt3nKxog8PIBuewIE4kaSH26HG2yaWcqPsU2SCbLMBjwzpn_mbfgjspzml5fwOl7mNZujI7dAJms1m6xHhMfP90X5fivA2Y5cON5i7lVMnWo2byEW5CBMa9a5saf4bb6tmK3i-piczFdWQYP47T4wSXId1aNYaoecbR4H5wb22a_9X-Qe4"/>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter w-full mb-xl">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-[24px] p-md premium-shadow border border-surface-variant premium-shadow-hover transition-all duration-300">
+<div class="font-headline-lg text-headline-lg font-extrabold text-primary mb-1">10,000+</div>
+<div class="font-label-md text-label-md text-[#6B7280]">Questions Generated</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-[24px] p-md premium-shadow border border-surface-variant premium-shadow-hover transition-all duration-300">
+<div class="font-headline-lg text-headline-lg font-extrabold text-primary mb-1">5,000+</div>
+<div class="font-label-md text-label-md text-[#6B7280]">Mock Interviews</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-[24px] p-md premium-shadow border border-surface-variant premium-shadow-hover transition-all duration-300">
+<div class="font-headline-lg text-headline-lg font-extrabold text-primary mb-1">92%</div>
+<div class="font-label-md text-label-md text-[#6B7280]">Reported Confidence</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-[24px] p-md premium-shadow border border-surface-variant premium-shadow-hover transition-all duration-300">
+<div class="font-headline-lg text-headline-lg font-extrabold text-primary mb-1">4.9/5</div>
+<div class="font-label-md text-label-md text-[#6B7280]">Average Rating</div>
+</div>
+</div>
+<!-- Trust Strip & Avatars -->
+<div class="flex flex-col items-center gap-sm mb-xl">
+<div class="flex -space-x-3 overflow-hidden">
+<img class="inline-block h-12 w-12 rounded-full ring-4 ring-surface" data-alt="Portrait of a diverse young professional software engineer smiling, soft studio lighting, professional tech-focused headshot for a modern SaaS platform. Primary brand colors of purple and off-white are subtly reflected in the environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIrT4SO3fo_eWO4kbdoVD0MXxfIeyHSbLkjE_hw0RmKkQy4EEBUpmNGn84ancZyhiRzL6V_ovsmtf3y4gs_wSNvFa-EKB3F76YPGdz2X5fVspnifTFsZfbbOpqlusST1jhNWmXcdJWdk8C6P5v6RTg1nuYaIDQ-3H-564RzRjjcNYU6IzSwx3_TpSbKG5dke55z0nxBhDWveAhwYbIzWssXRlLj1uT_fklCIqqpTSma-6Nf0S5q00d83gOSRLrcB3iYuKK8NsbE0Y"/>
+<img class="inline-block h-12 w-12 rounded-full ring-4 ring-surface" data-alt="Close-up portrait of a female university graduate with a modern professional appearance, bright high-key lighting, minimalist tech-forward aesthetic. Vibrant purple accents integrated into the background lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRycI0GTnYfjarE-jqpmV6wJ9PttNfbwuS3aWyg09CTTKrpvQiCuMg7V0jCt3FpzG06EAr41_grKnse1Ub5lxsMZ1IfO8yxCz6wsXhYXwt_fHq1_x14HqD4bsmLkowQeLpx_HsaAlHhzCR02o1ajoWdNFF2GTgYGNPAAMmYc1YKH6HJFRj5wqU3w0eUkMp9tzxB_r4Tnlnrv5qj9lEgG5dZbxttD2Zja9uy425K0gQujYuxQutbci9FPSCLJLVlCkvXAx8VNk2fhA"/>
+<img class="inline-block h-12 w-12 rounded-full ring-4 ring-surface" data-alt="Headshot of an ambitious tech worker in a minimalist modern workspace, focused expression, premium quality lighting. The image maintains a clean, light-mode friendly color palette with soft purple hues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1ciCpv8J6L036b7sVWpEuRoOrbmOHwku7F8Gv44XVNkH4RHEXTlUDKZtm9QOMtdpv7DzJZovzQtd9DzZmuFu8rUELnGGyxe1WiNev4Qwhe4Xcgk4_MSVaiD5UonjSwbwxBRxyJki903BQQtFQ8H4lVDXuNzWtCNy5_2tyYFNEfBBXwBcfPgPOqFRpxQ3zEKwO39iW2lQ62UQ93Tv7YIeJYWDyvA8YWJoRX_6GWYpobhx7hVweKxOsxm7r5CjSGdt_LR3IpJ_sCcQ"/>
+<img class="inline-block h-12 w-12 rounded-full ring-4 ring-surface" data-alt="Diverse professional man smiling warmly, high-end professional photography for a high-growth AI startup. Neutral off-white background with subtle glassmorphism effects and soft brand purple highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH0mo0yc8Wect5nG_Ls2Vi_r2JH2dVb1Mrc83u_nkxPUiqyp5ow88-t-N-7oh1UFQkTX5YQ4X5Y0WiZoDRL9kkC9JN9Ijc4Afgkbapb2-hWrTx3vpqaL1AWv2P_bJZSTrIOJ2dSsqlRqYF9pbDjwibdxzVJsmNSiwK7idRyeeYBn7Sl283s2luiMXzKqHCqOxzhAjwJ1GeAnklamrjKdGsmtKu-Dh41RhR_-TBwtHKG6C9Out1F6lxve_sFqZ0vFT1NDw4FUq02jM"/>
+<div class="inline-flex items-center justify-center h-12 w-12 rounded-full ring-4 ring-surface bg-primary-container text-on-primary-container font-label-md text-label-md">+2k</div>
+</div>
+<div class="text-center">
+<p class="font-label-md text-label-md text-on-surface">Trusted by 2,000+ students and professionals</p>
+<p class="font-label-sm text-label-sm text-[#6B7280] mt-1 flex items-center justify-center gap-1">
+<span class="text-[#FFD700]">⭐⭐⭐⭐⭐</span> 4.9 from 1,000+ reviews
+                    </p>
+</div>
+</div>
+<!-- Floating Testimonials Section -->
+<div class="relative w-full h-[320px] md:h-[200px] mb-lg mt-md">
+<!-- Testimonial 1 -->
+<div class="absolute left-1/2 -translate-x-[200px] md:-translate-x-[400px] top-0 max-w-[280px] bg-surface-container-lowest p-sm rounded-xl premium-shadow border border-surface-variant -rotate-3 hover:rotate-0 transition-transform duration-500 cursor-default">
+<p class="font-body-md text-body-md italic text-on-surface-variant">"Finally found an interview platform that actually remembers my weaknesses."</p>
+</div>
+<!-- Testimonial 2 -->
+<div class="absolute left-1/2 -translate-x-1/2 top-10 md:top-24 max-w-[280px] bg-surface-container-lowest p-sm rounded-xl premium-shadow border border-surface-variant rotate-2 hover:rotate-0 transition-transform duration-500 cursor-default z-10">
+<p class="font-body-md text-body-md italic text-on-surface-variant">"The voice interviews feel surprisingly real."</p>
+</div>
+<!-- Testimonial 3 -->
+<div class="absolute left-1/2 translate-x-[40px] md:translate-x-[120px] top-4 md:top-2 max-w-[280px] bg-surface-container-lowest p-sm rounded-xl premium-shadow border border-surface-variant -rotate-1 hover:rotate-0 transition-transform duration-500 cursor-default">
+<p class="font-body-md text-body-md italic text-on-surface-variant">"Got my Google internship after practicing here."</p>
+</div>
+</div>
+<!-- Footer Text -->
+<p class="font-body-md text-body-md text-[#6B7280] text-center max-w-lg mb-xl">
+                Built for students, graduates, and professionals preparing for their next big opportunity.
+            </p>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-lg bg-surface-container-lowest dark:bg-inverse-surface border-t border-surface-variant dark:border-outline-variant">
+<div class="max-w-[1280px] mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-inverse-on-surface">Clutchly</div>
+<div class="flex gap-md">
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all" href="#">Terms of Service</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all" href="#">Security</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all" href="#">Status</a>
+</div>
+<div class="font-body-md text-body-md text-on-surface-variant dark:text-outline-variant">
+                © 2024 Clutchly AI. All rights reserved.
+            </div>
+</div>
+</footer>
+<script>
+        // Micro-interaction: Smooth entrance animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('opacity-100', 'translate-y-0');
+                        entry.target.classList.remove('opacity-0', 'translate-y-8');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.premium-shadow').forEach((el) => {
+                el.classList.add('opacity-0', 'translate-y-8', 'transition-all', 'duration-700');
+                observer.observe(el);
+            });
+        });
+    </script>
+</body></html>

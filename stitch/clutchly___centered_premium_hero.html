@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clutchly | Ace Your Interviews</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#4c42e9",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "on-surface-variant": "#464555",
+                      "on-error": "#ffffff",
+                      "surface-container-low": "#f3f3f5",
+                      "on-primary": "#ffffff",
+                      "primary-fixed": "#e2dfff",
+                      "inverse-on-surface": "#f0f0f2",
+                      "surface-bright": "#f9f9fb",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#8c80ff",
+                      "primary-container": "#635bff",
+                      "on-primary-fixed-variant": "#321ed2",
+                      "on-surface": "#1a1c1d",
+                      "background": "#f9f9fb",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "tertiary": "#5c5a60",
+                      "surface": "#f9f9fb",
+                      "inverse-primary": "#c3c0ff",
+                      "secondary": "#584ac9",
+                      "inverse-surface": "#2f3132",
+                      "on-tertiary-fixed": "#1b1b1f",
+                      "on-tertiary-fixed-variant": "#47464b",
+                      "on-secondary": "#ffffff",
+                      "primary": "#493ee5",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#c8c5cb",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#c6bfff",
+                      "outline": "#777587",
+                      "on-secondary-fixed-variant": "#402fb0",
+                      "tertiary-fixed": "#e4e1e7",
+                      "secondary-fixed": "#e4dfff",
+                      "surface-container": "#edeef0",
+                      "on-primary-fixed": "#0f0069",
+                      "outline-variant": "#c7c4d8",
+                      "surface-variant": "#e2e2e4",
+                      "on-background": "#1a1c1d",
+                      "on-secondary-fixed": "#150066",
+                      "surface-container-high": "#e8e8ea",
+                      "on-secondary-container": "#22008e",
+                      "surface-dim": "#d9dadc",
+                      "on-tertiary-container": "#fefaff",
+                      "surface-container-highest": "#e2e2e4",
+                      "on-primary-container": "#fefaff",
+                      "tertiary-container": "#747378"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "8px",
+                      "margin-desktop": "64px",
+                      "lg": "48px",
+                      "max-width": "1280px",
+                      "sm": "16px",
+                      "md": "24px",
+                      "gutter": "24px",
+                      "margin-mobile": "20px",
+                      "base": "4px",
+                      "xl": "80px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Bricolage Grotesque"],
+                      "body-lg": ["Bricolage Grotesque"],
+                      "headline-lg-mobile": ["Bricolage Grotesque"],
+                      "label-sm": ["Bricolage Grotesque"],
+                      "body-md": ["Bricolage Grotesque"],
+                      "headline-sm": ["Bricolage Grotesque"],
+                      "display-lg": ["Bricolage Grotesque"],
+                      "label-md": ["Bricolage Grotesque"],
+                      "headline-lg": ["Bricolage Grotesque"]
+              },
+              "fontSize": {
+                      "headline-md": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["36px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-sm": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "display-lg": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                      "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "headline-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            background-color: #F8F8FA;
+            overflow-x: hidden;
+        }
+        .hero-underline {
+            position: relative;
+            display: inline-block;
+        }
+        .hero-underline::after {
+            content: '';
+            position: absolute;
+            bottom: 12px;
+            left: 0;
+            width: 100%;
+            height: 14px;
+            background: rgba(99, 91, 255, 0.15);
+            z-index: -1;
+            border-radius: 6px;
+        }
+        .sparkle {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #635BFF;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid #ECECEC;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease-out;
+        }
+        .sphere-bg {
+            background: #F1F3F8;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            width: 180%;
+            height: 520px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+        .floating-anim {
+            animation: floating 6s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px) rotate(var(--rot)); }
+            50% { transform: translateY(-15px) rotate(var(--rot)); }
+            100% { transform: translateY(0px) rotate(var(--rot)); }
+        }
+    </style>
+</head>
+<body class="min-h-screen relative flex flex-col items-center">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-0 mt-6 z-50 w-[88%] max-w-7xl h-[86px] flex items-center justify-between px-10 bg-white/80 backdrop-blur-md rounded-[28px] shadow-[0_10px_40px_rgba(0,0,0,0.05)] border border-outline-variant/20">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-on-surface rounded-xl flex items-center justify-center">
+<span class="text-white font-bold text-2xl">C</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Clutchly</span>
+</div>
+<div class="hidden md:flex items-center gap-12">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Features</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">How it works</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Pricing</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label-md text-label-md px-6 py-2 text-on-surface hover:text-primary transition-colors">Sign In</button>
+<div class="w-[52px] h-[52px] rounded-full border-2 border-white shadow-sm overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRaXKp7uS_1tWu7OCMnJieeAgB7l8HxdsE0xRyPBsf4ciYf-ZlU9CbjMjLC4UqbvoVr8yYsoUVRIIB32-_2XkfInva6vxACLED985Ru-K3rSv03BWgVlz6fXRu8I_BcwQXWo6F0j54JL_oixsVFH5524TSTMX_F0Ce8-35mggT155O24UQpKb-5st0vXRO-ZFcafzS61KbvxMBfl2ELwqI6XAQ7X-oZ-BTvOsUlH4ORYhbrFUSf0RkNHdgx4E83qhFQZ3jW585Vuw"/>
+</div>
+</div>
+</nav>
+<!-- Main Hero Section - Fully Centered -->
+<main class="relative z-10 w-full max-w-7xl pt-[180px] px-margin-desktop flex flex-col items-center text-center">
+<!-- Orbiting Floating Cards Container -->
+<div class="absolute inset-0 w-full h-full pointer-events-none -z-10 overflow-visible">
+<!-- Profile Card -->
+<div class="glass-card absolute top-[20%] left-[-5%] w-[200px] p-4 rounded-xl floating-anim" style="--rot: -3deg">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA522ZikaatD2rbOX2ltKKTnjdrewNdBVL6eZfzrSYbasoKoSi3KWZoOS41Tpau3tngsBHTrXUfMkFpvARUD8jnllydpA5sLDcU-2RtrOvWUmAj6hPsPxEx5EW4iCeZ95--6cYWs7xfcmpFegO2RAfiDZZJzIkV__kE2JVcC8-f4nXMPtjcjM3QHbsUD12YULoj0Y3XiiSB4t2-02If28Ozj2qTMUgYyzlbI12eoOue_uVqYS-yN6ZA733PCBKx_qKPgqU6LHzf7D8"/>
+<div class="text-left">
+<p class="font-bold text-xs text-on-surface">Aarav Mehta</p>
+<p class="text-[10px] text-on-surface-variant">Interview Ready</p>
+</div>
+</div>
+</div>
+<!-- Streak Card -->
+<div class="glass-card absolute top-[40%] right-[-8%] w-[160px] p-4 rounded-xl floating-anim" style="--rot: 2deg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-500 !text-[20px]">local_fire_department</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-lg leading-none text-on-surface">12</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Day Streak</p>
+</div>
+</div>
+</div>
+<!-- Score Card -->
+<div class="glass-card absolute bottom-[25%] left-[-10%] w-[180px] p-5 rounded-2xl floating-anim" style="--rot: -2deg">
+<div class="relative w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle cx="32" cy="32" fill="transparent" r="28" stroke="#F1F3F8" stroke-width="6"></circle>
+<circle cx="32" cy="32" fill="transparent" r="28" stroke="#635BFF" stroke-dasharray="176" stroke-dashoffset="30" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<span class="absolute font-bold text-lg">85</span>
+</div>
+<p class="text-[11px] font-bold text-on-surface">Skill Score</p>
+</div>
+<!-- Badge Card -->
+<div class="glass-card absolute bottom-[40%] right-[-5%] w-[140px] p-4 rounded-xl floating-anim" style="--rot: 3deg">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-amber-500 !text-[40px] mb-1">workspace_premium</span>
+<p class="text-[11px] font-bold">L4 Certified</p>
+</div>
+</div>
+</div>
+<!-- Headline -->
+<h1 class="font-display-lg text-[100px] leading-[1.0] font-[800] text-on-surface max-w-[900px]">
+            Clutch your <br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-[#635BFF] to-[#8B7FFF] hero-underline">
+                interviews
+                <div class="sparkle -top-6 -right-10 opacity-60"></div>
+<div class="sparkle -bottom-2 -left-6 scale-75 opacity-30"></div>
+</span>
+</h1>
+<!-- Subheading -->
+<p class="font-body-lg text-[26px] text-on-surface-variant max-w-[650px] leading-relaxed mt-10">
+            Practice with AI mock interviews, get instant feedback, and land your dream role with confidence.
+        </p>
+<!-- CTAs -->
+<div class="flex items-center gap-6 mt-12 mb-20">
+<button class="bg-on-surface text-white h-[64px] px-10 rounded-full font-label-md text-label-md flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl group">
+                Start Practicing Now
+                <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
+<span class="material-symbols-outlined !text-[20px]">arrow_forward</span>
+</div>
+</button>
+<button class="bg-white border border-outline-variant h-[64px] px-10 rounded-full font-label-md text-label-md flex items-center gap-3 hover:bg-surface-container-low transition-all">
+                See How It Works
+                <div class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined !text-[18px]">play_arrow</span>
+</div>
+</button>
+</div>
+<!-- Main Dashboard Card -->
+<div class="relative w-full max-w-4xl z-30 mb-[-120px]">
+<div class="glass-card w-full p-10 rounded-[32px] text-left border border-white/40 shadow-2xl overflow-hidden">
+<div class="flex items-start justify-between mb-8">
+<div class="flex items-center gap-6">
+<div class="w-20 h-20 rounded-full bg-secondary-container/10 flex items-center justify-center relative">
+<img class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfmEHbLapXsh4Za20wBN9I2ZYhJPNQ_77ntLis3jNV6bjnCjqb-bOH9w6cfznF3wLzZOeNzCUzf8nOmis66H65iIOMA7FN7ss4dD08CRzkLIBS2g8-AvMX-5mliSHXYWZ5wpp6M9AALIsSHiwPZwn-tx5-D8SZTRxBR9cj3ou6aYq53xSM_6TOJTrxHL_LwapR60rn-XgfboPXp5fMsYUbz97Fy8jTtujKciPt6VEixfwwyKOJ17alv9nOo1QfCBhr0ljThVqxwkU"/>
+<div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-white rounded-full"></div>
+</div>
+<div>
+<h4 class="text-3xl font-bold text-on-surface">AI Mock Interview</h4>
+<p class="text-lg text-on-surface-variant">Senior Software Engineer - Google Prep</p>
+</div>
+</div>
+<div class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2">
+<div class="w-2 h-2 bg-green-600 rounded-full animate-ping"></div>
+                        LIVE SESSION
+                    </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<div class="space-y-6">
+<div class="bg-surface-container-low p-6 rounded-2xl">
+<p class="text-lg leading-relaxed text-on-surface italic">"Can you describe a situation where you had to lead a project under extreme technical pressure? What was your approach to risk management?"</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-1.5 items-end h-10">
+<div class="w-1.5 bg-primary h-5 rounded-full animate-pulse"></div>
+<div class="w-1.5 bg-primary h-8 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+<div class="w-1.5 bg-primary h-4 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+<div class="w-1.5 bg-primary h-10 rounded-full animate-pulse" style="animation-delay: 0.1s"></div>
+<div class="w-1.5 bg-primary h-7 rounded-full animate-pulse" style="animation-delay: 0.3s"></div>
+</div>
+<span class="font-semibold text-primary">Capturing response...</span>
+</div>
+</div>
+<div class="border-l border-outline-variant/30 pl-10 space-y-6">
+<div class="flex items-center gap-4">
+<img class="w-12 h-12 rounded-xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsOJ5gS2_ULL5-_BakdLi8exKLN5D5DdGCxff8SxX83PdA3aV45JFqeTIEEZTVU5kBslEYipVbWgx_zHy6AATaI6GnBy2j-smIGiPQw4jBcj4BRyS-hpdJdDyO48jpB3wjsLIrjNpf4ReKQvCKkv_OuEi8ly-WGHT3mC1b0JMULJNxHP3KT0cUNM9K2BxlBqLo7QVEhztG6wk8Isi97wzSFGMyOVuv4q0R9xIFyw05fmesa4CgbeesFq_duDJg0QuDSeFcBWLgfm4"/>
+<div>
+<p class="font-bold text-on-surface">Coach Feedback</p>
+<p class="text-xs text-on-surface-variant">Olivia Wouters, Senior Eng @ Google</p>
+</div>
+</div>
+<p class="text-on-surface-variant text-md leading-relaxed">
+                            "Excellent use of the STAR method. Consider highlighting the specific technical trade-offs you made during the crisis to demonstrate deeper architecture awareness."
+                        </p>
+<div class="flex gap-3">
+<span class="bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-lg">High Impact</span>
+<span class="bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-lg">Concise</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Decorative Sphere -->
+<div class="sphere-bg"></div>
+<!-- Trust & Social Proof (Centered on Sphere) -->
+<section class="relative z-20 w-full max-w-7xl flex flex-col items-center pt-[180px] pb-xl">
+<p class="font-label-sm text-label-sm text-on-surface-variant/70 mb-10 tracking-[0.2em] uppercase">Trusted by top professionals from</p>
+<div class="flex flex-wrap justify-center items-center gap-16 mb-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+<span class="font-headline-sm text-3xl font-bold text-on-surface">Google</span>
+<span class="font-headline-sm text-3xl font-bold text-on-surface">Microsoft</span>
+<span class="font-headline-sm text-3xl font-bold text-on-surface">amazon</span>
+<span class="font-headline-sm text-3xl font-bold text-on-surface">Paytm</span>
+<span class="font-headline-sm text-3xl font-bold text-on-surface">Adobe</span>
+</div>
+<div class="flex flex-col items-center gap-4 bg-white/40 backdrop-blur-sm p-6 px-10 rounded-[32px] border border-white/60 shadow-lg">
+<div class="flex -space-x-4">
+<div class="w-14 h-14 rounded-full border-4 border-white overflow-hidden shadow-sm"><img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA522ZikaatD2rbOX2ltKKTnjdrewNdBVL6eZfzrSYbasoKoSi3KWZoOS41Tpau3tngsBHTrXUfMkFpvARUD8jnllydpA5sLDcU-2RtrOvWUmAj6hPsPxEx5EW4iCeZ95--6cYWs7xfcmpFegO2RAfiDZZJzIkV__kE2JVcC8-f4nXMPtjcjM3QHbsUD12YULoj0Y3XiiSB4t2-02If28Ozj2qTMUgYyzlbI12eoOue_uVqYS-yN6ZA733PCBKx_qKPgqU6LHzf7D8"/></div>
+<div class="w-14 h-14 rounded-full border-4 border-white overflow-hidden shadow-sm"><img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmUN5eGQynTrGI2eOGhggsCXs6oqBUAopIezRifmSinoy3ghEZIjGpTGyYcJL6K1vIdsrqJW43TZuMueIPiMPnGizCZUtWMUfsdIMO3_-jcR4ooTdaC4l1S_tigDf9F_udMi7a73z069rJI-n1fofk2Kx7j0PLvIOJT8UeUrRlM0t_IXh8sxAAkoSrAaGN36MNhrH7JfEhT9GUK5zgqaAHQOC_B52blpHdsOt60Edv62kEbfsVyC82BgWGhco6fT6cSdht0B53SXk"/></div>
+<div class="w-14 h-14 rounded-full border-4 border-white overflow-hidden shadow-sm"><img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBSbgweAC1qUMK8weCV8Zw24XcXkuwYhu-i-IgUqUpRQF7hTULzFk-x5YXmi2b4_CdkAkvqpW4bqW-Ffhwg_RhMg-5RtQGMUa1Yz5NusbPbu2t5CUhltp91bT8MFnhSW8nNiP92x4wLinsgU8p8OiMUB9ciNc0ZlopBgtsmEDE7rtR8O0kl5jDteWS1Jo8bFesxdhimI04DcfUKwqNG4jpqJFBTVpOFFYMLNpG-MRvWDBp6g9wsEJvilt6XhwZIxcWO8yk11bamzw"/></div>
+<div class="w-14 h-14 rounded-full border-4 border-white overflow-hidden shadow-sm"><img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWpiDBqE-jn9LBSYHk2spUEUT9KkDugON5vUuQH_ugmKbihTIcttn788PLKL8JH8f2K1W_c-S2N-GbXHOlky-uTFYpq8QVf-x3oQj1dinTMgjWmvzdFVDEYnbe-M2XtqpYYqrLFmlKigIuyLXX6Dbn7tuUY0leGP4EBgH5to0ddactA7_cp6D6Hnk-YBnDARhoge66HMIocnRGznKJ6eO9kpR9eyelC2U045e2JbJuuBda6SQjhYWe0-UUqP3By_YrnzLNJRpZ4lw"/></div>
+</div>
+<div class="text-center">
+<div class="flex text-amber-400 gap-1 justify-center mb-1">
+<span class="material-symbols-outlined !text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined !text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined !text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined !text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined !text-[20px]" style="font-variation-settings: 'FILL' 1;">star_half</span>
+<span class="text-on-surface font-bold text-lg ml-2">4.9</span>
+</div>
+<p class="text-sm text-on-surface-variant font-medium">Loved by 10,000+ candidates</p>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="w-full relative z-20 mt-20 border-t border-outline-variant/20 py-12 px-margin-desktop bg-surface">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-on-surface rounded-lg flex items-center justify-center">
+<span class="text-white font-bold text-lg">C</span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">Clutchly</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[400px] text-center md:text-left">
+                © 2024 Clutchly AI. Empowering the next generation of top-tier talent.
+            </p>
+<div class="flex gap-8">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all" href="#">Privacy</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all" href="#">Terms</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all" href="#">Support</a>
+</div>
+</div>
+</footer>
+<script>
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const mouseX = e.pageX;
+            const mouseY = e.pageY;
+
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardCenterX = rect.left + rect.width / 2;
+                const cardCenterY = rect.top + rect.height / 2;
+                
+                const moveX = (mouseX - centerX) / 60;
+                const moveY = (mouseY - centerY) / 60;
+                
+                // Keep the base rotation defined in style
+                const baseRot = card.style.getPropertyValue('--rot') || '0deg';
+                card.style.transform = `translate(${moveX}px, ${moveY}px) rotate(${baseRot})`;
+            });
+        });
+    </script>
+</body></html>

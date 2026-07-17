@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FAQ - Clutchly AI</title>
+<!-- Font -->
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-low": "#f3f3f5",
+                        "on-secondary-fixed": "#150066",
+                        "on-secondary-fixed-variant": "#402fb0",
+                        "on-surface-variant": "#464555",
+                        "inverse-primary": "#c3c0ff",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e2e2e4",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "surface-dim": "#d9dadc",
+                        "inverse-on-surface": "#f0f0f2",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#22008e",
+                        "secondary-fixed-dim": "#c6bfff",
+                        "inverse-surface": "#2f3132",
+                        "tertiary-container": "#747378",
+                        "primary-container": "#635bff",
+                        "on-tertiary-fixed-variant": "#47464b",
+                        "on-primary-fixed-variant": "#321ed2",
+                        "secondary-fixed": "#e4dfff",
+                        "on-surface": "#1a1c1d",
+                        "tertiary-fixed": "#e4e1e7",
+                        "surface": "#f8f8fa",
+                        "on-primary-container": "#fefaff",
+                        "surface-tint": "#4c42e9",
+                        "secondary": "#584ac9",
+                        "background": "#f8f8fa",
+                        "on-background": "#1a1c1d",
+                        "surface-container-high": "#e8e8ea",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e2e2e4",
+                        "outline": "#777587",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#8c80ff",
+                        "tertiary-fixed-dim": "#c8c5cb",
+                        "on-primary-fixed": "#0f0069",
+                        "primary": "#493ee5",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#5c5a60",
+                        "surface-bright": "#f9f9fb",
+                        "surface-container": "#edeef0",
+                        "on-tertiary-container": "#fefaff",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#1b1b1f",
+                        "outline-variant": "#e5e7eb"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "max-width": "1280px",
+                        "margin-mobile": "20px",
+                        "xl": "80px",
+                        "margin-desktop": "64px",
+                        "lg": "48px",
+                        "sm": "16px",
+                        "md": "24px",
+                        "gutter": "24px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Bricolage Grotesque"],
+                        "label-md": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "headline-lg": ["Bricolage Grotesque"],
+                        "body-md": ["Bricolage Grotesque"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "body-lg": ["Bricolage Grotesque"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "headline-lg-mobile": ["Bricolage Grotesque"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["72px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["36px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            background-color: #f8f8fa;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            opacity: 0;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 200px;
+            opacity: 1;
+        }
+        .accordion-item.active .icon-plus {
+            transform: rotate(45deg);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<main class="min-h-screen flex flex-col items-center py-xl px-margin-mobile md:px-margin-desktop">
+<!-- Header Section -->
+<header class="w-full max-w-[850px] text-center mb-xl">
+<span class="inline-block px-md py-xs bg-primary/10 text-primary font-label-md text-label-md rounded-full mb-sm">
+                FAQ
+            </span>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface tracking-tight mb-md">
+                Frequently asked questions
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                Everything you need to know before starting your first AI interview.
+            </p>
+</header>
+<!-- FAQ Accordion -->
+<section class="w-full max-w-[850px]">
+<div class="flex flex-col">
+<!-- Item 1 (Active by default) -->
+<div class="accordion-item active border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Is it really like talking to a real interviewer?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            Yes. Clutchly uses advanced low-latency voice synthesis and LLMs trained on thousands of technical and behavioral interview rubrics to simulate the nuance, follow-up questions, and pressure of a live conversation.
+                        </p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            How does Clutchly personalize interviews?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            We analyze your target job description and your specific resume to generate custom question sets. The AI adapts its follow-up questions based on the depth of your initial answers, just like a human would.
+                        </p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            What kind of feedback do I receive?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            You get a detailed breakdown of your technical accuracy, communication clarity, and sentiment analysis. We provide actionable suggestions on how to rephrase weak points and highlight missing keywords.
+                        </p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Is my data and voice recording private?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            Absolutely. We encrypt all voice data and never share your recordings with third parties. You have full control over your data and can delete your interview history at any time.
+                        </p>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Does it support coding and technical assessments?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            Yes, our technical mode includes a split-screen IDE. The AI interviewer can see your code in real-time, ask you to explain your logic, and suggest edge cases you might have missed.
+                        </p>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Which languages are supported?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            Currently, we fully support English, Spanish, French, and German. We are rolling out support for Japanese and Mandarin in the coming months to help global candidates.
+                        </p>
+</div>
+</div>
+<!-- Item 7 -->
+<div class="accordion-item border-t border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Can I practice for non-tech roles?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            While we specialize in tech and product roles, Clutchly is highly effective for Sales, Marketing, and Operations interviews. Simply upload your JD and the AI will adapt accordingly.
+                        </p>
+</div>
+</div>
+<!-- Item 8 -->
+<div class="accordion-item border-y border-outline-variant py-md group cursor-pointer" onclick="toggleAccordion(this)">
+<div class="flex justify-between items-center gap-md">
+<h3 class="font-headline-sm text-[20px] md:text-headline-sm text-on-surface group-hover:text-primary transition-colors duration-200">
+                            Do you offer a free trial?
+                        </h3>
+<span class="material-symbols-outlined icon-plus text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div class="accordion-content mt-sm">
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                            Yes, your first 20-minute interview session is on us. No credit card required. You'll get a full feedback report to see the value of the platform immediately.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer / Contact Section -->
+<footer class="w-full max-w-[850px] mt-xl pt-lg border-t border-outline-variant/30 text-center">
+<p class="font-body-md text-body-md text-on-surface-variant mb-xs">
+                Still have questions? We'd love to help.
+            </p>
+<a class="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline transition-all" href="#">
+                Contact Support <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</footer>
+</main>
+<script>
+        function toggleAccordion(element) {
+            const isActive = element.classList.contains('active');
+            
+            // Close all other items
+            document.querySelectorAll('.accordion-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Toggle current item
+            if (!isActive) {
+                element.classList.add('active');
+            }
+        }
+    </script>
+</body></html>

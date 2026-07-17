@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clutchly | Interactive Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#584ac9",
+                    "on-background": "#1a1c1d",
+                    "outline": "#777587",
+                    "surface-dim": "#d9dadc",
+                    "background": "#f9f9fb",
+                    "on-tertiary-fixed": "#1b1b1f",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#402fb0",
+                    "error": "#ba1a1a",
+                    "on-surface": "#1a1c1d",
+                    "on-primary-fixed-variant": "#321ed2",
+                    "secondary-fixed": "#e4dfff",
+                    "surface": "#f9f9fb",
+                    "primary-container": "#635bff",
+                    "on-secondary": "#ffffff",
+                    "inverse-on-surface": "#f0f0f2",
+                    "tertiary-fixed": "#e4e1e7",
+                    "surface-tint": "#4c42e9",
+                    "surface-bright": "#f9f9fb",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#c3c0ff",
+                    "on-secondary-container": "#22008e",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "primary": "#493ee5",
+                    "surface-container-highest": "#e2e2e4",
+                    "surface-container-high": "#e8e8ea",
+                    "on-primary-container": "#fefaff",
+                    "outline-variant": "#c7c4d8",
+                    "surface-variant": "#e2e2e4",
+                    "secondary-fixed-dim": "#c6bfff",
+                    "primary-fixed": "#e2dfff",
+                    "secondary-container": "#8c80ff",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#2f3132",
+                    "tertiary-fixed-dim": "#c8c5cb",
+                    "on-surface-variant": "#464555",
+                    "on-primary-fixed": "#0f0069",
+                    "surface-container": "#edeef0",
+                    "on-tertiary-fixed-variant": "#47464b",
+                    "on-secondary-fixed": "#150066",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#5c5a60",
+                    "tertiary-container": "#747378",
+                    "surface-container-low": "#f3f3f5",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "on-tertiary-container": "#fefaff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "max-width": "1280px",
+                    "md": "24px",
+                    "margin-desktop": "64px",
+                    "lg": "48px",
+                    "base": "4px",
+                    "xl": "80px",
+                    "xs": "8px",
+                    "sm": "16px",
+                    "margin-mobile": "20px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Bricolage Grotesque"],
+                    "display-lg": ["Bricolage Grotesque"],
+                    "headline-md": ["Bricolage Grotesque"],
+                    "headline-lg": ["Bricolage Grotesque"],
+                    "headline-sm": ["Bricolage Grotesque"],
+                    "label-sm": ["Bricolage Grotesque"],
+                    "body-md": ["Bricolage Grotesque"],
+                    "body-lg": ["Bricolage Grotesque"],
+                    "label-md": ["Bricolage Grotesque"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["36px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                    "headline-md": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Bricolage Grotesque', sans-serif; background-color: #F8F8FA; }
+        
+        .premium-shadow { box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(236, 236, 236, 0.5); }
+        
+        .waveform-bar {
+            animation: wave-bounce 1s ease-in-out infinite;
+            transform-origin: bottom;
+        }
+        @keyframes wave-bounce {
+            0%, 100% { height: 8px; }
+            50% { height: 24px; }
+        }
+
+        .pulse-mic {
+            animation: mic-glow 2s infinite ease-in-out;
+        }
+        @keyframes mic-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 91, 255, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(99, 91, 255, 0); }
+        }
+
+        .typing-dot {
+            animation: dot-blink 1.4s infinite both;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dot-blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+
+        .floating-blob {
+            filter: blur(80px);
+            opacity: 0.3;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="text-on-background overflow-x-hidden">
+<main class="relative min-h-screen py-xl px-margin-mobile md:px-margin-desktop overflow-hidden">
+<!-- Decorative Background Elements -->
+<div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary rounded-full floating-blob animate-pulse"></div>
+<div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary rounded-full floating-blob" style="animation-duration: 8s; animation-iteration-count: infinite; animation-timing-function: ease-in-out;"></div>
+<!-- Dotted Curved Lines (SVG) -->
+<div class="absolute inset-0 pointer-events-none opacity-20">
+<svg class="w-full h-full" fill="none" viewbox="0 0 1280 800" xmlns="http://www.w3.org/2000/svg">
+<path d="M-100 600C200 400 600 800 1380 200" stroke="#635BFF" stroke-dasharray="8 12" stroke-width="2"></path>
+<path d="M-200 200C300 500 800 100 1480 600" stroke="#584AC9" stroke-dasharray="8 12" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Section Header -->
+<div class="max-w-3xl mx-auto text-center mb-xl relative z-10">
+<span class="inline-flex items-center gap-xs px-sm py-xs rounded-full bg-primary/10 text-primary font-label-md text-label-md mb-md border border-primary/20">
+                🎙️ Experience it yourself
+            </span>
+<h1 class="font-headline-lg text-headline-lg md:text-headline-lg mb-md leading-tight">
+                A mock interview that actually <span class="text-primary">feels real.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                No typing. No robotic chatbots. Just a natural voice conversation with an AI interviewer that listens, responds, and adapts in real time.
+            </p>
+</div>
+<!-- Main Demo Content -->
+<div class="max-w-max-width mx-auto relative z-20">
+<!-- Grid Layout for Mockup and Floating Elements -->
+<div class="relative flex flex-col items-center">
+<!-- Floating Feature Cards (Desktop Only / Absolute Positioned) -->
+<div class="hidden lg:block absolute -left-20 top-20 rotate-[-4deg] glass-card p-md rounded-[20px] premium-shadow w-64 hover:scale-105 transition-transform duration-500">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-xs rounded-lg">bolt</span>
+<h4 class="font-label-md text-label-md text-on-surface">Low Latency</h4>
+</div>
+<p class="font-body-md text-label-sm text-on-surface-variant">Sub-500ms response time for fluid, non-stop dialogue.</p>
+</div>
+<div class="hidden lg:block absolute -right-24 top-10 rotate-[6deg] glass-card p-md rounded-[20px] premium-shadow w-64 hover:scale-105 transition-transform duration-500">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-secondary bg-secondary/10 p-xs rounded-lg">record_voice_over</span>
+<h4 class="font-label-md text-label-md text-on-surface">Natural Conversation</h4>
+</div>
+<p class="font-body-md text-label-sm text-on-surface-variant">AI that understands tone, intent, and subtle vocal nuances.</p>
+</div>
+<div class="hidden lg:block absolute -left-32 bottom-40 rotate-[2deg] glass-card p-md rounded-[20px] premium-shadow w-64 hover:scale-105 transition-transform duration-500">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-xs rounded-lg">sync_problem</span>
+<h4 class="font-label-md text-label-md text-on-surface">Interrupt Anytime</h4>
+</div>
+<p class="font-body-md text-label-sm text-on-surface-variant">Just like real life, you can stop the AI mid-sentence to clarify.</p>
+</div>
+<div class="hidden lg:block absolute -right-16 bottom-20 rotate-[-3deg] glass-card p-md rounded-[20px] premium-shadow w-64 hover:scale-105 transition-transform duration-500">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-secondary bg-secondary/10 p-xs rounded-lg">track_changes</span>
+<h4 class="font-label-md text-label-md text-on-surface">Adaptive Follow-ups</h4>
+</div>
+<p class="font-body-md text-label-sm text-on-surface-variant">Dynamic questioning based on your specific previous answers.</p>
+</div>
+<!-- Browser Mockup -->
+<div class="w-full max-w-4xl bg-surface-container-lowest rounded-[22px] border border-outline-variant/30 premium-shadow overflow-hidden relative group">
+<!-- Browser Top Bar -->
+<div class="flex items-center justify-between px-md py-sm bg-surface-container-low border-b border-outline-variant/20">
+<div class="flex gap-xs">
+<div class="w-3 h-3 rounded-full bg-[#FF5F57]"></div>
+<div class="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
+<div class="w-3 h-3 rounded-full bg-[#28C840]"></div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-lg py-1 text-label-sm text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                            clutchly.ai/demo/interview-room
+                        </div>
+<div class="flex gap-sm">
+<div class="px-sm py-1 rounded-full bg-primary/10 text-primary text-label-sm flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                                Connected
+                            </div>
+</div>
+</div>
+<!-- Interface Body -->
+<div class="flex flex-col md:flex-row h-[500px]">
+<!-- Conversation Main Area -->
+<div class="flex-1 p-xl flex flex-col items-center justify-center relative overflow-hidden">
+<!-- AI Avatar Section -->
+<div class="relative mb-lg">
+<div class="w-40 h-40 rounded-full border-4 border-primary/20 p-2 bg-background flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A professional yet friendly female AI persona with a subtle holographic glow, centered and smiling softly against a minimalist purple-tinted background. High-key lighting, 3D render style with soft focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcJdLZU6CaxQZHTZ16qIbzPTrH2jox7-Nq322H3H8kRRnyECMXpLNeT9iXs5STR8AJol8EWvRu6EAVDRhDyPOpIXNTOpYwBFM4WiflZwL2bZwkVRkhbkS7LqGPvOZbC-eXT2_i618lIjwJIL-gZq4OzpymO70uXDkFNKF9JQaBFfHkKvRBpMrIBhiNguBi-Ctn7Z0RPsTPzFk3enzFJqkxDSfvbfvOouuzuhDWC0WbkSHJWUkyC_5Z3qgaSjiifqtZLsiesEgjAaI"/>
+</div>
+<!-- Pulse Ring -->
+<div class="absolute inset-0 rounded-full bg-primary/20 scale-110 animate-ping opacity-20"></div>
+</div>
+<!-- Listening Status & Waveform -->
+<div class="text-center mb-xl">
+<span class="font-label-md text-on-surface text-label-md tracking-wide uppercase opacity-70">Listening...</span>
+<div class="flex items-end justify-center gap-1 h-8 mt-md">
+<div class="waveform-bar w-1.5 bg-primary rounded-full" style="animation-delay: 0.1s; height: 12px;"></div>
+<div class="waveform-bar w-1.5 bg-primary/80 rounded-full" style="animation-delay: 0.3s; height: 20px;"></div>
+<div class="waveform-bar w-1.5 bg-primary rounded-full" style="animation-delay: 0.2s; height: 28px;"></div>
+<div class="waveform-bar w-1.5 bg-primary/60 rounded-full" style="animation-delay: 0.4s; height: 16px;"></div>
+<div class="waveform-bar w-1.5 bg-primary rounded-full" style="animation-delay: 0.1s; height: 22px;"></div>
+<div class="waveform-bar w-1.5 bg-primary/70 rounded-full" style="animation-delay: 0.3s; height: 12px;"></div>
+</div>
+</div>
+<!-- Conversation Flow Overlay -->
+<div class="w-full max-w-md space-y-md">
+<div class="flex gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shrink-0">
+<span class="material-symbols-outlined text-[18px]">smart_toy</span>
+</div>
+<div class="bg-surface-container-high rounded-2xl rounded-tl-none p-md font-body-md text-on-surface shadow-sm">
+                                        Interesting. How would you scale it for thousands of concurrent users?
+                                    </div>
+</div>
+<div class="flex flex-row-reverse gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+<div class="bg-primary text-white rounded-2xl rounded-tr-none p-md font-body-md shadow-sm">
+                                        I would start by... 
+                                        <span class="inline-flex gap-1 ml-1 align-middle">
+<span class="w-1.5 h-1.5 bg-white rounded-full typing-dot"></span>
+<span class="w-1.5 h-1.5 bg-white rounded-full typing-dot"></span>
+<span class="w-1.5 h-1.5 bg-white rounded-full typing-dot"></span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Analytics -->
+<div class="w-full md:w-80 bg-surface-container-low border-l border-outline-variant/20 p-md flex flex-col gap-md">
+<div class="glass-card p-md rounded-xl premium-shadow">
+<div class="flex items-center justify-between mb-sm">
+<h5 class="font-label-md text-label-md text-on-surface">Interview Progress</h5>
+<span class="text-primary font-bold">7/10</span>
+</div>
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[70%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-sm">
+<h6 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Real-time Metrics</h6>
+<div class="flex items-center justify-between p-sm rounded-xl bg-white/50 border border-outline-variant/10">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">forum</span>
+<span class="font-label-md text-label-md text-on-surface">Communication</span>
+</div>
+<span class="font-bold text-on-surface">89%</span>
+</div>
+<div class="flex items-center justify-between p-sm rounded-xl bg-white/50 border border-outline-variant/10">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">psychology</span>
+<span class="font-label-md text-label-md text-on-surface">Confidence</span>
+</div>
+<span class="font-bold text-on-surface">92%</span>
+</div>
+<div class="flex items-center justify-between p-sm rounded-xl bg-white/50 border border-outline-variant/10">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[#28C840]">code</span>
+<span class="font-label-md text-label-md text-on-surface">Technical</span>
+</div>
+<span class="font-bold text-on-surface">91%</span>
+</div>
+</div>
+<!-- Controls at bottom -->
+<div class="mt-auto flex flex-col gap-sm items-center py-md border-t border-outline-variant/20">
+<div class="text-on-surface-variant font-label-md text-label-md mb-xs">
+                                    Timer: <span class="text-on-surface font-mono">12:47</span>
+</div>
+<button class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg pulse-mic transition-transform hover:scale-110 active:scale-95">
+<span class="material-symbols-outlined text-[32px]">mic</span>
+</button>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Tap to end interview</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Subtle Analytics Card Floating Nearby -->
+<div class="hidden xl:block absolute -right-12 bottom-1/2 translate-y-1/2 glass-card p-lg rounded-[22px] premium-shadow w-56 border-primary/20 border-2">
+<div class="text-center space-y-xs">
+<div class="text-headline-sm font-headline-sm text-primary">98%</div>
+<div class="font-label-md text-label-md text-on-surface">Match Accuracy</div>
+<div class="text-label-sm text-on-surface-variant">Our AI predicts hiring outcomes with clinical precision.</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Callout Section -->
+<div class="mt-xl max-w-4xl mx-auto relative z-20">
+<div class="bg-primary-container p-xl md:p-xl rounded-[32px] text-center text-on-primary-container shadow-2xl relative overflow-hidden group">
+<!-- Inner Pattern Glow -->
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.2),transparent)] opacity-50"></div>
+<h2 class="font-headline-md text-headline-md md:text-headline-lg mb-sm relative z-10">
+                    The closest thing to a real interview.
+                </h2>
+<p class="font-body-lg text-body-lg text-on-primary-container/80 mb-xl max-w-xl mx-auto relative z-10">
+                    Practice in a realistic environment before it actually matters. Gain confidence, refine your answers, and land your dream job.
+                </p>
+<div class="relative z-10">
+<button class="bg-on-primary-container text-primary-container px-xl py-lg rounded-full font-headline-sm text-headline-sm hover:shadow-xl transition-all hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center gap-sm mx-auto">
+                        Try a Demo Interview
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Abstract Circles in Callout -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
+<div class="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+</div>
+</div>
+</main>
+<!-- Custom Script for Micro-interactions -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Randomly oscillate the waveform heights slightly to simulate real audio input
+            const bars = document.querySelectorAll('.waveform-bar');
+            setInterval(() => {
+                bars.forEach(bar => {
+                    const randomHeight = Math.floor(Math.random() * 20) + 8;
+                    bar.style.height = `${randomHeight}px`;
+                });
+            }, 150);
+
+            // Subtle parallax effect on floating cards
+            document.addEventListener('mousemove', (e) => {
+                const amount = 20;
+                const x = (e.clientX / window.innerWidth - 0.5) * amount;
+                const y = (e.clientY / window.innerHeight - 0.5) * amount;
+                
+                const cards = document.querySelectorAll('.glass-card');
+                cards.forEach((card, index) => {
+                    const factor = (index + 1) * 0.5;
+                    card.style.transform = `translate(${x * factor}px, ${y * factor}px) rotate(${(index % 2 === 0 ? -4 : 4)}deg)`;
+                });
+            });
+        });
+    </script>
+</body></html>
