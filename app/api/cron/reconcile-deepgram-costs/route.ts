@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     const costMap = new Map<string, number>();
 
     while (true) {
-      const url = `https://api.deepgram.com/v1/projects/${projectId}/requests?start=${startStr}&limit=${limit}&status=succeeded`;
+      const url = `https://api.deepgram.com/v1/projects/${projectId}/requests?start=${startStr}&limit=${limit}`;
       const res = await fetch(url, {
         headers: {
           Authorization: `Token ${apiKey}`,
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 
       for (const req of requests) {
         // Look for details.usd if present
-        const usd = req?.details?.usd;
+        const usd = req?.response?.details?.usd;
         if (typeof usd === "number") {
           costMap.set(req.request_id, usd);
         }

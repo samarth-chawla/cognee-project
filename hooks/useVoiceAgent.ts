@@ -700,6 +700,7 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
           log("event: Welcome", msg);
           const requestId = (msg.request_id ?? msg.requestId) as string | undefined;
           if (requestId && interviewIdRef.current) {
+            log("Capturing requestId:", requestId);
             fetch("/api/interview/voice/session-id", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -708,9 +709,19 @@ export function useVoiceAgent(): UseVoiceAgentReturn {
                 requestId,
                 source: "client_welcome",
               }),
+              keepalive: true, // Crucial: ensures the request completes even if the component unmounts immediately (user clicks Cancel)
+            }).then(async (res) => {
+              if (!res.ok) {
+                 const text = await res.text();
+                 console.warn("[VoiceAgent] Failed to capture requestId server-side:", res.status, text);
+              } else {
+                 log("[VoiceAgent] requestId captured successfully in DB!");
+              }
             }).catch((err) => {
-              console.warn("[VoiceAgent] Failed to capture requestId:", err);
+              console.warn("[VoiceAgent] Failed to capture requestId network error:", err);
             });
+          } else {
+            console.warn("[VoiceAgent] Welcome received but missing requestId or interviewIdRef", { requestId, interviewId: interviewIdRef.current });
           }
           transition("READY", "agent websocket ready");
           break;
